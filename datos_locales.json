@@ -1,0 +1,162 @@
+[
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$YdpYsoVccBGBLrr6zHz1f8$6ShPoytJIj5iuCCNo62dcso3uw1RcAJGm4u8sML+3nU=",
+    "last_login": "2026-07-30T02:29:58.936Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "jennifer.defaz3511@utc.edu.ec",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-07-30T02:27:11.042Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 2,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$u7a4fEeVGe5oLtEa0L4UMS$xTzAePND+8LrO5Cxwgs6MhwC0VQrKKjsq/ETqPoCF38=",
+    "last_login": "2026-07-30T03:41:06.487Z",
+    "is_superuser": true,
+    "username": "admin2",
+    "first_name": "",
+    "last_name": "",
+    "email": "jennifer.defaz3511@utc.edu.ec",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-07-30T02:41:23.003Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 3,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$FSmsXCb1KJI9codIJ5siR3$U7+LbDctz5A5eoAnzzREPfspINlCvuVa5LxXM25S5V4=",
+    "last_login": "2026-07-30T02:49:24.409Z",
+    "is_superuser": false,
+    "username": "jenniferdefazyug@gmail.com",
+    "first_name": "jennifer",
+    "last_name": "defaz",
+    "email": "jenniferdefazyug@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-07-30T02:43:43.771Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 4,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$CYeAoC07uU5u46XzjEkpwv$3VqDGq++1KE+2GXGGrQ2KWIjbY8XPSVJiIL9YSFljZM=",
+    "last_login": "2026-07-30T03:11:11.926Z",
+    "is_superuser": false,
+    "username": "coordinador1",
+    "first_name": "Carlos",
+    "last_name": "Mendoza",
+    "email": "carlos.mendoza@novaeventos.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-07-30T03:10:10.842Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 5,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$UQ0yA3LbLS4IUM3QuoIbdi$RMJQJGcCyTcdvdQRJSWCjFJl2ntiYXUFXJy9JYIMtbo=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "coordinador2",
+    "first_name": "Laura",
+    "last_name": "Paredes",
+    "email": "laura.paredes@novaeventos.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-07-30T03:10:11.229Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "hdyyslhk72hve8oynetbohcegnvnjeff",
+  "fields": {
+    "session_data": ".eJxVjLsOwjAMAP_FM4pSp2msjux8Q-XYDimgVupjQvw7qtQB1rvTvWHgfavDvtoyjAo9IFx-WWZ52nQIffB0n53M07aM2R2JO-3qbrPa63q2f4PKa4UegknkRE0gRI9ciFoz9YE1YioRQ0iMUZLPWKIX7pI22HrNQtaREHy-0fA3lQ:1wpHdq:SQAxJzUFclEs6q13I7dCn6B6Kg2vKMZt4x-mUWKylyE",
+    "expire_date": "2026-08-13T03:41:06.491Z"
+  }
+},
+{
+  "model": "eventos.usuario",
+  "pk": 1,
+  "fields": {
+    "user": 1,
+    "rol": "ADMINISTRADOR",
+    "cedula": "1700000000",
+    "telefono": "0999999999"
+  }
+},
+{
+  "model": "eventos.usuario",
+  "pk": 3,
+  "fields": {
+    "user": 3,
+    "rol": "CLIENTE",
+    "cedula": "0550673511",
+    "telefono": "0987028365"
+  }
+},
+{
+  "model": "eventos.usuario",
+  "pk": 4,
+  "fields": {
+    "user": 2,
+    "rol": "ADMINISTRADOR",
+    "cedula": "1700000001",
+    "telefono": "0999999998"
+  }
+},
+{
+  "model": "eventos.usuario",
+  "pk": 5,
+  "fields": {
+    "user": 4,
+    "rol": "COORDINADOR",
+    "cedula": "1712345678",
+    "telefono": "0991234567"
+  }
+},
+{
+  "model": "eventos.usuario",
+  "pk": 6,
+  "fields": {
+    "user": 5,
+    "rol": "COORDINADOR",
+    "cedula": "1798765432",
+    "telefono": "0987654321"
+  }
+},
+{
+  "model": "eventos.salon",
+  "pk": 1,
+  "fields": {
+    "nombre": "Salón Diamante",
+    "capacidad": 80,
+    "precio_base": "450.00",
+    "descripcion": "Salón ideal para reuniones corporativas, seminarios y capacitaciones. Cuenta con aire acondicionado e iluminación LED.",
+    "activo": true,
+    "imagen": "salones/salon1.jpg"
+  }
+}
+]
