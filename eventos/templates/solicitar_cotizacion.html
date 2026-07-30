@@ -1,0 +1,165 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container">
+<div class="row">
+<div class="col-md-2"></div>
+<div class="col-md-8">
+<br>
+<h1><b>Cotizar: {{ salon.nombre }}</b></h1>
+<div class="alert alert-info">
+<b>Capacidad:</b> {{ salon.capacidad }} personas &nbsp;|&nbsp;
+<b>Precio base:</b> ${{ salon.precio_base }}
+</div>
+<hr>
+
+<form id="form_cotizacion" method="post">
+    {% csrf_token %}
+<div class="form-group">
+<label><b>Fecha tentativa del evento: <span class="text-danger">*</span></b></label>
+<input class="form-control" type="date" name="fecha_evento_tentativa" id="fecha_evento_tentativa">
+</div>
+<div class="form-row">
+<div class="form-group col-md-6">
+<label><b>Hora de inicio: <span class="text-danger">*</span></b></label>
+<input class="form-control" type="time" name="hora_inicio_tentativa" id="hora_inicio_tentativa">
+</div>
+<div class="form-group col-md-6">
+<label><b>Hora de fin: <span class="text-danger">*</span></b></label>
+<input class="form-control" type="time" name="hora_fin_tentativa" id="hora_fin_tentativa">
+</div>
+</div>
+<div class="form-group">
+<label><b>Número de invitados: <span class="text-danger">*</span></b></label>
+<input class="form-control" type="number" name="numero_invitados" id="numero_invitados"
+min="1" max="{{ salon.capacidad }}" placeholder="Máx. {{ salon.capacidad }}">
+</div>
+
+<hr>
+
+<div class="form-group">
+    <label><b>Catering:</b> <small class="text-muted">(opcional, puedes elegir varios proveedores)</small></label>
+    <div class="card">
+        <div class="list-group list-group-flush">
+            {% for proveedor in proveedores %}
+            <label class="list-group-item d-flex justify-content-between align-items-center">
+                <span>
+                    <input type="checkbox" class="mr-2" name="proveedores_catering" value="{{ proveedor.id }}">
+                    <b>{{ proveedor.nombre_empresa }}</b>
+                    <small class="text-muted">— {{ proveedor.especialidad }}</small>
+                </span>
+                <span class="badge badge-light">${{ proveedor.precio_por_persona }} / persona</span>
+            </label>
+            {% empty %}
+            <div class="list-group-item text-muted">No hay proveedores de catering disponibles por ahora.</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="form-group">
+    <label><b>Equipos audiovisuales:</b> <small class="text-muted">(opcional, puedes elegir varios y su cantidad)</small></label>
+    <div class="card">
+        {% regroup equipos by get_categoria_display as equipos_por_categoria %}
+        {% for grupo in equipos_por_categoria %}
+            <div class="list-group-item bg-light py-1"><small><b>{{ grupo.grouper }}</b></small></div>
+            <div class="list-group list-group-flush">
+            {% for equipo in grupo.list %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                        <input type="checkbox" class="chk-equipo mr-2" name="equipos" value="{{ equipo.id }}"
+                               id="chk_equipo_{{ equipo.id }}">
+                        <label for="chk_equipo_{{ equipo.id }}" class="mb-0">{{ equipo.nombre }}</label>
+                    </span>
+                    <span class="d-flex align-items-center">
+                        <input type="number" class="form-control form-control-sm input-cantidad mr-2"
+                               style="width: 80px;" name="cantidad_{{ equipo.id }}"
+                               value="1" min="1" max="{{ equipo.cantidad_total }}" disabled>
+                        <span class="badge badge-light">${{ equipo.precio_unitario }} c/u</span>
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+            </div>
+        {% empty %}
+            <div class="list-group-item text-muted">No hay equipos audiovisuales disponibles por ahora.</div>
+        {% endfor %}
+    </div>
+</div>
+
+<button class="btn btn-success" type="submit">
+<i class="fa fa-paper-plane"></i> Enviar solicitud
+</button>
+<a href="{% url 'catalogo_salones' %}" class="btn btn-secondary">
+<i class="fa fa-times"></i> Cancelar
+</a>
+</form>
+<br>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Fecha mínima = hoy (construida como string local para evitar desfase UTC)
+    const ahora = new Date();
+    const hoy = ahora.getFullYear() + '-'
+        + String(ahora.getMonth() + 1).padStart(2, '0') + '-'
+        + String(ahora.getDate()).padStart(2, '0');
+    const campoFecha = document.getElementById('fecha_evento_tentativa');
+    campoFecha.setAttribute('min', hoy);
+
+    // Pre-rellenar desde el parámetro GET ?fecha=YYYY-MM-DD (viene del calendario)
+    const paramFecha = new URLSearchParams(window.location.search).get('fecha');
+    if (paramFecha && paramFecha >= hoy) {
+        campoFecha.value = paramFecha;
+    }
+
+    // Habilita/deshabilita el input de cantidad según el checkbox del equipo
+    $('.chk-equipo').on('change', function() {
+        const $cantidad = $(this).closest('.list-group-item').find('.input-cantidad');
+        $cantidad.prop('disabled', !this.checked);
+        if (!this.checked) { $cantidad.val(1); }
+    });
+
+    $('#form_cotizacion').validate({
+        rules: {
+            fecha_evento_tentativa: { required: true, date: true },
+            hora_inicio_tentativa: { required: true },
+            hora_fin_tentativa: {
+                required: true,
+                greaterThan: '#hora_inicio_tentativa'
+            },
+            numero_invitados: {
+                required: true,
+                number: true,
+                min: 1,
+                max: {{ salon.capacidad }}
+            }
+        },
+        messages: {
+            fecha_evento_tentativa: { required: 'La fecha es obligatoria.' },
+            hora_inicio_tentativa: { required: 'La hora de inicio es obligatoria.' },
+            hora_fin_tentativa: {
+                required: 'La hora de fin es obligatoria.',
+                greaterThan: 'La hora de fin debe ser posterior a la de inicio.'
+            },
+            numero_invitados: {
+                required: 'El número de invitados es obligatorio.',
+                min: 'Mínimo 1 invitado.',
+                max: 'No puede superar la capacidad del salón ({{ salon.capacidad }}).'
+            }
+        }
+    });
+
+    // Regla personalizada: hora fin > hora inicio
+    $.validator.addMethod('greaterThan', function(value, element, param) {
+        const refValue = $(param).val();
+        if (!value || !refValue) return true;
+        return value > refValue;
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container" style="padding-top: 40px;">
+<div class="row">
+<div class="col-md-3"></div>
+<div class="col-md-6">
+<br><br>
+<div class="card">
+<div class="card-body">
+<h3 class="text-center"><b>Iniciar Sesión</b></h3>
+<hr>
+{% if error %}<p style="color:red;"><b>{{ error }}</b></p>{% endif %}
+
+<form id="form_login" method="post">
+    {% csrf_token %}
+    <b>Usuario o correo:</b>
+    <input class="form-control" type="text" name="usuario">
+    <br>
+    <b>Contraseña:</b>
+    <input class="form-control" type="password" name="clave">
+    <br><br>
+    <button class="btn btn-success form-control" type="submit">Ingresar</button>
+</form>
+<hr>
+<p class="text-center mb-0">¿No tienes cuenta? <a href="{% url 'registro_cliente' %}">Regístrate aquí</a></p>
+</div>
+</div>
+<br>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $("#form_login").validate({
+        rules: { usuario: { required: true }, clave: { required: true } }
+    });
+});
+</script>
+{% endblock %}

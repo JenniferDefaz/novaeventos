@@ -1,0 +1,222 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container" style="padding-top: 40px;">
+<h1><b>Disposición de Mesas y Sillas</b></h1>
+<p><b>Evento:</b> {{ evento.salon.nombre }} — {{ evento.fecha_evento_inicio|date:"d/m/Y H:i" }}</p>
+<hr>
+
+<div class="row">
+    <!-- Barra de elementos arrastrables -->
+    <div class="col-md-3">
+        <h5>Elementos disponibles</h5>
+        <p class="text-muted small">Arrastra al plano del salón</p>
+
+        <div class="elemento-disponible" data-tipo="mesa_redonda" data-sillas="8">
+            <i class="fa fa-circle-o fa-2x"></i><br>
+            Mesa redonda (8 sillas)
+        </div>
+
+        <div class="elemento-disponible" data-tipo="mesa_rectangular" data-sillas="6">
+            <i class="fa fa-square-o fa-2x"></i><br>
+            Mesa rectangular (6 sillas)
+        </div>
+
+        <div class="elemento-disponible" data-tipo="tarima" data-sillas="0">
+            <i class="fa fa-microphone fa-2x"></i><br>
+            Tarima / escenario
+        </div>
+
+        <hr>
+        <button id="btn_guardar" class="btn btn-success w-100">
+            <i class="fa fa-save"></i> Guardar disposición
+        </button>
+        <a href="{% url 'detalle_evento_coordinador' evento.id %}" class="btn btn-secondary w-100 mt-2">
+            Volver al evento
+        </a>
+    </div>
+
+    <!-- Plano del salón -->
+    <div class="col-md-9">
+        <div id="plano_salon"></div>
+    </div>
+</div>
+</div>
+
+<style>
+.elemento-disponible{
+    border: 2px dashed #0B3C5D;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    margin-bottom: 12px;
+    cursor: grab;
+    background: #f8f9fa;
+    user-select: none;
+}
+
+#plano_salon{
+    position: relative;
+    width: 100%;
+    height: 800px;
+    background:
+        linear-gradient(rgba(11,60,93,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(11,60,93,0.04) 1px, transparent 1px),
+        #fff;
+    background-size: 40px 40px;
+    border: 2px solid #0B3C5D;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.mesa-colocada{
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    background: #0B3C5D;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: move;
+    font-size: 12px;
+    text-align: center;
+    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+}
+
+.mesa-colocada.rectangular{
+    border-radius: 10px;
+    width: 110px;
+    height: 70px;
+}
+
+.mesa-colocada.tarima{
+    border-radius: 6px;
+    background: #FD7E14;
+    width: 140px;
+    height: 60px;
+}
+
+.mesa-colocada .btn-eliminar-mesa{
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+    line-height: 22px;
+    text-align: center;
+    cursor: pointer;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    let layout = {{ layout_json|safe }};
+    let contadorId = 0;
+
+    // Renderiza una mesa ya guardada o recién soltada
+    function renderizarMesa(item) {
+        const claseExtra = item.tipo === 'mesa_rectangular' ? 'rectangular' : (item.tipo === 'tarima' ? 'tarima' : '');
+        const etiqueta = item.tipo === 'tarima' ? 'Tarima' : `${item.sillas} sillas`;
+
+        const $mesa = $(`
+            <div class="mesa-colocada ${claseExtra}" data-id="${item.id}" data-tipo="${item.tipo}" data-sillas="${item.sillas}"
+                 style="left:${item.x}px; top:${item.y}px;">
+                <span>${etiqueta}</span>
+                <div class="btn-eliminar-mesa">×</div>
+            </div>
+        `);
+
+        $mesa.draggable({
+            containment: '#plano_salon',
+            stop: function(event, ui) {
+                actualizarPosicion($(this).data('id'), ui.position.left, ui.position.top);
+            }
+        });
+
+        $mesa.find('.btn-eliminar-mesa').on('click', function() {
+            const id = $mesa.data('id');
+            layout = layout.filter(m => m.id !== id);
+            $mesa.remove();
+        });
+
+        $('#plano_salon').append($mesa);
+    }
+
+    function actualizarPosicion(id, x, y) {
+        const item = layout.find(m => m.id === id);
+        if (item) { item.x = x; item.y = y; }
+    }
+
+    // Cargar el layout guardado previamente
+    layout.forEach(item => {
+        contadorId = Math.max(contadorId, item.id + 1);
+        renderizarMesa(item);
+    });
+
+    // Hacer arrastrables los elementos de la barra lateral
+    $('.elemento-disponible').draggable({
+        helper: 'clone',
+        revert: 'invalid'
+    });
+
+    // El plano acepta que se suelten elementos ahí
+    $('#plano_salon').droppable({
+        accept: '.elemento-disponible',
+        drop: function(event, ui) {
+            const offset = $(this).offset();
+            const x = ui.offset.left - offset.left;
+            const y = ui.offset.top - offset.top;
+
+            const nuevoItem = {
+                id: contadorId++,
+                tipo: ui.draggable.data('tipo'),
+                sillas: ui.draggable.data('sillas'),
+                x: Math.max(0, x),
+                y: Math.max(0, y)
+            };
+
+            layout.push(nuevoItem);
+            renderizarMesa(nuevoItem);
+        }
+    });
+
+    // Guardar en el backend
+    $('#btn_guardar').on('click', function() {
+        fetch('{% url "guardar_disposicion" evento.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ layout: layout })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.ok) {
+                Swal.fire({
+                    title: 'Guardado',
+                    text: 'La disposición fue guardada correctamente.',
+                    icon: 'success',
+                    confirmButtonText: 'Volver al evento'
+                }).then(() => {
+                    window.location.href = '{% url "detalle_evento_coordinador" evento.id %}';
+                });
+            } else {
+                Swal.fire('Error', data.error || 'No se pudo guardar.', 'error');
+            }
+        })
+        .catch(() => {
+            Swal.fire('Error', 'Ocurrió un problema de conexión.', 'error');
+        });
+    });
+});
+</script>
+{% endblock %}

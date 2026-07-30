@@ -1,0 +1,68 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container">
+<br>
+<div class="row">
+<div class="col-md-2"></div>
+<div class="col-md-8">
+
+<div class="d-flex justify-content-between align-items-center">
+    <h1><b>Mi Evento</b></h1>
+    <a href="{% url 'mis_cotizaciones' %}" class="btn btn-secondary">
+        <i class="fa fa-arrow-left"></i> Volver
+    </a>
+</div>
+<hr>
+
+{% if evento %}
+<div class="card mb-3">
+    <div class="card-header bg-dark text-white"><b><i class="fa fa-calendar-check-o"></i> Detalles del Evento Confirmado</b></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><b>Salón:</b><br>{{ cotizacion.salon_solicitado.nombre }}</p>
+                <p><b>Fecha del evento:</b><br>{{ evento.fecha_evento_inicio|date:"d/m/Y" }}</p>
+                <p><b>Horario:</b><br>{{ evento.fecha_evento_inicio|date:"H:i" }} — {{ evento.fecha_evento_fin|date:"H:i" }}</p>
+                <p><b>N.° de invitados:</b> {{ cotizacion.numero_invitados }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><b>Montaje desde:</b><br>{{ evento.fecha_montaje_inicio|date:"d/m/Y H:i" }}</p>
+                <p><b>Desmontaje hasta:</b><br>{{ evento.fecha_desmontaje_fin|date:"d/m/Y H:i" }}</p>
+                <p><b>Catering:</b> {{ cotizacion.incluye_catering|yesno:"Sí,No" }}</p>
+                <p><b>Audiovisuales:</b> {{ cotizacion.incluye_audiovisuales|yesno:"Sí,No" }}</p>
+            </div>
+        </div>
+        <hr>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <b>Precio final: <span class="text-success" style="font-size:1.3em;">${{ evento.precio_final }}</span></b>
+            </div>
+            <span class="badge badge-success" style="font-size:14px;">
+                <i class="fa fa-check-circle"></i> {{ evento.get_estado_display }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Botón de descarga de factura PDF -->
+<div class="alert alert-success d-flex justify-content-between align-items-center">
+    <div>
+        <i class="fa fa-file-pdf-o"></i>
+        <b> Tu factura/comprobante de reserva está disponible.</b><br>
+        <small class="text-muted">Documento generado automáticamente al confirmar tu evento.</small>
+    </div>
+    <a href="{% url 'descargar_factura' evento.id %}" class="btn btn-success">
+        <i class="fa fa-download"></i> Descargar Factura PDF
+    </a>
+</div>
+
+{% else %}
+<div class="alert alert-warning">
+    <i class="fa fa-clock-o"></i> Tu evento aún no ha sido configurado por nuestro equipo. Por favor espera.
+</div>
+{% endif %}
+
+</div>
+</div>
+</div>
+{% endblock %}

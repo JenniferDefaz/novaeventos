@@ -1,0 +1,276 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container" style="padding-top: 40px;">
+<h1><b>Calendario de Reservas</b></h1>
+<hr>
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label><b>Filtrar por salón:</b></label>
+        <select id="filtro_salon" class="form-control">
+            <option value="">Todos los salones</option>
+            {% for salon in salones %}
+                <option value="{{ salon.id }}">{{ salon.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="mb-3">
+    <span class="badge" style="background:#FFC107;">&nbsp;&nbsp;&nbsp;</span> Montaje &nbsp;
+    <span class="badge" style="background:#0B3C5D;">&nbsp;&nbsp;&nbsp;</span> Evento &nbsp;
+    <span class="badge" style="background:#FD7E14;">&nbsp;&nbsp;&nbsp;</span> Desmontaje
+</div>
+
+<div id="calendario"></div>
+
+<br>
+</div>
+<br>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendario');
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        locale: 'es',
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',    
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        height: 650,              // altura fija, ya no crece sin control
+        slotMinTime: '06:00:00',  // en vista semana/día, empieza a las 6am
+        slotMaxTime: '23:00:00',  // y termina a las 11pm (rango real de eventos)
+        slotDuration: '01:00:00', // franjas de 1 hora
+        nowIndicator: true,       // línea que marca la hora actual (opcional, se ve bien)
+        events: function(info, successCallback, failureCallback) {
+            const salon = $('#filtro_salon').val();
+            let url = '{% url "eventos_calendario_json" %}';
+            if (salon) {
+                url += '?salon=' + salon;
+            }
+            fetch(url)
+                .then(response => response.json())
+                .then(data => successCallback(data))
+                .catch(error => failureCallback(error));
+        },
+        dateClick: function(info) {
+            const fechaStr = info.dateStr;   // 'YYYY-MM-DD'
+
+            // Fecha de hoy como string local YYYY-MM-DD (sin conversión UTC)
+            const ahora = new Date();
+            const hoy = ahora.getFullYear() + '-'
+                + String(ahora.getMonth() + 1).padStart(2, '0') + '-'
+                + String(ahora.getDate()).padStart(2, '0');
+
+            // 1. Fecha pasada → bloquear
+            if (fechaStr < hoy) {
+                Swal.fire({
+                    title: 'Fecha no disponible',
+                    text: 'No puedes registrar cotizaciones en fechas pasadas.',
+                    icon: 'warning',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+
+            const salonId = $('#filtro_salon').val();
+
+            // 2. Consultar disponibilidad al servidor
+            let url = '{% url "disponibilidad_salon_json" %}?fecha=' + fechaStr;
+            if (salonId) url += '&salon=' + salonId;
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.disponible) {
+                        Swal.fire({
+                            title: 'Fecha no disponible',
+                            text: data.motivo,
+                            icon: 'error',
+                            confirmButtonText: 'Entendido'
+                        });
+                        return;
+                    }
+
+                    // 3. Fecha libre → preguntar a qué salón cotizar
+                    {% if salones %}
+                    // Construir opciones del select
+                    let opcionesHtml = '<option value="">-- Selecciona un salón --</option>';
+                    const salones = [
+                        {% for s in salones %}
+                        { id: {{ s.id }}, nombre: "{{ s.nombre|escapejs }}" },
+                        {% endfor %}
+                    ];
+                    salones.forEach(s => {
+                        const sel = (salonId && String(salonId) === String(s.id)) ? 'selected' : '';
+                        opcionesHtml += `<option value="${s.id}" ${sel}>${s.nombre}</option>`;
+                    });
+
+                    Swal.fire({
+                        title: `Cotizar para el ${fechaStr.split('-').reverse().join('/')}`,
+                        html: `<label class="swal2-label">Selecciona el salón:</label>
+                               <select id="swal_salon" class="swal2-select" style="width:100%;">${opcionesHtml}</select>`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ir al formulario',
+                        cancelButtonText: 'Cancelar',
+                        preConfirm: () => {
+                            const val = document.getElementById('swal_salon').value;
+                            if (!val) {
+                                Swal.showValidationMessage('Debes seleccionar un salón.');
+                            }
+                            return val;
+                        }
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                            {% if es_admin %}
+                            // Admin → formulario de cotización admin
+                            window.location.href = `{% url 'crear_cotizacion_admin' %}?fecha=${fechaStr}&salon=${result.value}`;
+                            {% else %}
+                            // Cliente → formulario de cotización cliente
+                            window.location.href = `/cotizar/${result.value}/?fecha=${fechaStr}`;
+                            {% endif %}
+                        }
+                    });
+                    {% endif %}
+                })
+                .catch(() => {
+                    Swal.fire('Error', 'No se pudo verificar la disponibilidad. Intenta de nuevo.', 'error');
+                });
+        },
+
+        eventClick: function(info) {
+            const props = info.event.extendedProps;
+            Swal.fire({
+                title: props.tipo,
+                html: `<b>Cliente:</b> ${props.cliente}<br>
+                       <b>Inicio:</b> ${info.event.start.toLocaleString('es-EC')}<br>
+                       <b>Fin:</b> ${info.event.end ? info.event.end.toLocaleString('es-EC') : ''}`,
+                icon: 'info',
+                confirmButtonText: 'Cerrar'
+            });
+        }
+    });
+
+    calendar.render();
+
+    $('#filtro_salon').on('change', function() {
+        calendar.refetchEvents();
+    });
+});
+</script>
+<style>
+    #calendario {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        border: 1px solid #e8e0d8;
+    }
+
+    /* Título del mes/semana */
+    .fc .fc-toolbar-title {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 1.6rem;
+        color: #2a2929;
+        letter-spacing: 0.5px;
+    }
+
+    /* Botones prev/next/hoy */
+    .fc .fc-button-primary {
+        background-color: #2a2929;
+        border-color: #2a2929;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        padding: 6px 14px;
+        box-shadow: none !important;
+    }
+    .fc .fc-button-primary:hover {
+        background-color: #c9a898;
+        border-color: #c9a898;
+    }
+    .fc .fc-button-primary:not(:disabled).fc-button-active {
+        background-color: #c9a898;
+        border-color: #c9a898;
+        color: #2a2929;
+    }
+    .fc .fc-button-primary:disabled {
+        background-color: #ddd;
+        border-color: #ddd;
+        color: #6b6b6b;
+        opacity: 1;
+    }
+
+    /* Encabezados de días (lun, mar, mié...) */
+    .fc-col-header-cell {
+        background-color: #faf7f4;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        color: #6b6b6b;
+        padding: 10px 0;
+    }
+
+    /* Día de hoy resaltado */
+    .fc-daygrid-day.fc-day-today,
+    .fc-timegrid-col.fc-day-today {
+        background-color: #faf3ec !important;
+    }
+
+    /* Números de día */
+    .fc-daygrid-day-number {
+        font-family: Georgia, serif;
+        color: #2a2929;
+        font-size: 0.9rem;
+    }
+
+    /* Días clicables */
+    .fc-daygrid-day {
+        cursor: pointer;
+    }
+    .fc-daygrid-day:hover .fc-daygrid-day-frame {
+        background-color: #fdf0e8;
+        transition: background-color 0.15s ease;
+    }
+
+    /* Línea de "ahora" */
+    .fc-timegrid-now-indicator-line {
+        border-color: #c9a898;
+    }
+    .fc-timegrid-now-indicator-arrow {
+        border-color: #c9a898;
+        color: #c9a898;
+    }
+
+    /* Eventos: más redondeados y con mejor tipografía */
+    .fc-event {
+        border: none;
+        border-radius: 5px;
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        font-size: 0.78rem;
+        font-weight: 500;
+        padding: 3px 6px;
+        cursor: pointer;
+    }
+    .fc-event:hover {
+        filter: brightness(1.1);
+    }
+
+    /* Líneas de la cuadrícula más suaves */
+    .fc-theme-standard td, .fc-theme-standard th {
+        border-color: #ececec;
+    }
+
+    /* Etiquetas de hora (6, 7, 8...) */
+    .fc-timegrid-slot-label {
+        font-size: 0.75rem;
+        color: #999;
+    }
+</style>
+{% endblock %}

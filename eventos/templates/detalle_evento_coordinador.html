@@ -1,0 +1,421 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container" style="padding-top: 30px;">
+
+<!-- Encabezado -->
+<div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+    <div>
+        <h1><b>Detalle del Evento</b></h1>
+        <p class="text-muted mb-0">{{ evento.salon.nombre }} &mdash; {{ evento.fecha_evento_inicio|date:"d/m/Y H:i" }}</p>
+    </div>
+    <a href="{% url 'mis_eventos_asignados' %}" class="btn btn-secondary mt-2">
+        <i class="fa fa-arrow-left"></i> Volver
+    </a>
+</div>
+<hr>
+
+<div class="row">
+<!-- Col izquierda: datos del evento -->
+<div class="col-md-4">
+    <div class="card mb-3">
+        <div class="card-header bg-dark text-white"><b>Información del Evento</b></div>
+        <div class="card-body">
+            <p><b>Cliente:</b><br>{{ evento.cotizacion_origen.cliente.user.get_full_name }}</p>
+            <p><b>Salón:</b><br>{{ evento.salon.nombre }}</p>
+            <p><b>Montaje desde:</b><br>{{ evento.fecha_montaje_inicio|date:"d/m/Y H:i" }}</p>
+            <p><b>Evento:</b><br>{{ evento.fecha_evento_inicio|date:"H:i" }} — {{ evento.fecha_evento_fin|date:"H:i" }}</p>
+            <p><b>Desmontaje hasta:</b><br>{{ evento.fecha_desmontaje_fin|date:"d/m/Y H:i" }}</p>
+            <p><b>Invitados:</b> {{ evento.cotizacion_origen.numero_invitados }}</p>
+            <p><b>Catering incluido:</b> {{ evento.cotizacion_origen.incluye_catering|yesno:"Sí,No" }}</p>
+            <p><b>Audiovisuales:</b> {{ evento.cotizacion_origen.incluye_audiovisuales|yesno:"Sí,No" }}</p>
+            <p><b>Precio final:</b> ${{ evento.precio_final }}</p>
+            <hr>
+            <p class="mb-1"><b>Estado actual:</b></p>
+            <span class="badge badge-info" style="font-size:14px;">{{ evento.get_estado_display }}</span>
+        </div>
+    </div>
+
+    <!-- Cambio de estado -->
+    {% if estados_posibles %}
+    <div class="card mb-3">
+        <div class="card-header bg-warning text-dark"><b>Cambiar Estado</b></div>
+        <div class="card-body">
+            <form method="post" id="form_estado">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="cambiar_estado">
+                <div class="form-group">
+                    <label><b>Nuevo estado:</b></label>
+                    <select class="form-control" name="nuevo_estado" id="select_estado">
+                        <option value="" disabled selected>Selecciona...</option>
+                        {% for valor, etiqueta in estados_posibles %}
+                            <option value="{{ valor }}">{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="button" class="btn btn-warning btn-block" id="btn_cambiar_estado">
+                    <i class="fa fa-refresh"></i> Cambiar Estado
+                </button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-secondary">No hay transiciones de estado disponibles para este evento.</div>
+    {% endif %}
+</div>
+
+<!-- Col derecha: catering + equipos -->
+<div class="col-md-8">
+
+    <!-- CATERING ASIGNADO -->
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <b><i class="fa fa-cutlery"></i> Proveedores de Catering</b>
+            <button class="btn btn-sm btn-success" data-toggle="collapse" data-target="#form_catering_nuevo">
+                <i class="fa fa-plus"></i> Agregar
+            </button>
+        </div>
+
+        {% if catering_cotizacion %}
+        <div class="card-body border-bottom bg-light py-2">
+            <small class="text-muted"><i class="fa fa-info-circle"></i> <b>Solicitados en la cotización:</b></small>
+            <div class="d-flex flex-wrap gap-2 mt-1">
+                {% for cc in catering_cotizacion %}
+                    <span class="badge badge-info" style="font-size:12px; padding:6px 10px;">
+                        {{ cc.proveedor.nombre_empresa }}
+                        <small class="ml-1 text-light">${{ cc.proveedor.precio_por_persona }}/p</small>
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="collapse" id="form_catering_nuevo">
+            <div class="card-body border-bottom">
+                <form method="post" id="form_asignar_catering">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="asignar_catering">
+                    <div class="form-row">
+                        <div class="col-md-6">
+                            <label>Proveedor</label>
+                            {% if proveedores_disponibles %}
+                            <select class="form-control" name="proveedor_id" id="sel_proveedor">
+                                <option value="" disabled selected>Selecciona...</option>
+                                {% for prov in proveedores_disponibles %}
+                                    <option value="{{ prov.id }}">{{ prov.nombre_empresa }} — ${{ prov.precio_por_persona }}/persona</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <p class="text-muted mt-2 mb-0"><i class="fa fa-check-circle text-success"></i> Todos los proveedores activos ya están asignados a este evento.</p>
+                            <input type="hidden" name="proveedor_id" value="">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label>Tipo de servicio</label>
+                            <input class="form-control" type="text" name="tipo_servicio" id="tipo_servicio" placeholder="Ej: comida principal, bar">
+                        </div>
+                    </div>
+                    <br>
+                    <button type="submit" class="btn btn-success btn-sm">Asignar proveedor</button>
+                </form>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if asignaciones_catering %}
+            <table class="table table-sm mb-0">
+                <thead class="thead-light">
+                    <tr><th>Empresa</th><th>Tipo de servicio</th><th>Precio/persona</th><th></th></tr>
+                </thead>
+                <tbody>
+                {% for ac in asignaciones_catering %}
+                <tr>
+                    <td>{{ ac.proveedor.nombre_empresa }}</td>
+                    <td>{{ ac.tipo_servicio }}</td>
+                    <td>${{ ac.proveedor.precio_por_persona }}</td>
+                    <td>
+                        <form method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="eliminar_catering">
+                            <input type="hidden" name="asignacion_id" value="{{ ac.id }}">
+                            <button type="button" class="btn btn-danger btn-sm btn-eliminar-catering" title="Remover">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted p-3 mb-0">Sin proveedores de catering asignados.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- EQUIPOS ASIGNADOS -->
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <b><i class="fa fa-microphone"></i> Equipos Audiovisuales</b>
+            <button class="btn btn-sm btn-success" data-toggle="collapse" data-target="#form_equipo_nuevo">
+                <i class="fa fa-plus"></i> Agregar
+            </button>
+        </div>
+
+        {% if equipos_cotizacion %}
+        <div class="card-body border-bottom bg-light py-2">
+            <small class="text-muted"><i class="fa fa-info-circle"></i> <b>Solicitados en la cotización:</b></small>
+            <div class="d-flex flex-wrap gap-2 mt-1">
+                {% for ce in equipos_cotizacion %}
+                    <span class="badge badge-info" style="font-size:12px; padding:6px 10px;">
+                        {{ ce.equipo.nombre }}
+                        <small class="ml-1 text-light">x{{ ce.cantidad }}</small>
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="collapse" id="form_equipo_nuevo">
+            <div class="card-body border-bottom">
+                <form method="post" id="form_asignar_equipo">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="asignar_equipo">
+                    <div class="form-row">
+                        <div class="col-md-8">
+                            <label>Equipo</label>
+                            <select class="form-control" name="equipo_id" id="sel_equipo">
+                                <option value="" disabled selected>Selecciona...</option>
+                                {% for item in equipos_con_disponibilidad %}
+                                    <option value="{{ item.equipo.id }}"
+                                        {% if item.disponible <= 0 or item.ya_asignado %}disabled{% endif %}>
+                                        {{ item.equipo.nombre }} ({{ item.equipo.get_categoria_display }})
+                                        {% if item.ya_asignado %}
+                                            — ya asignado
+                                        {% else %}
+                                            — {{ item.disponible }} disponible(s)
+                                        {% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label>Cantidad</label>
+                            <input class="form-control" type="number" name="cantidad_asignada" value="1" min="1">
+                        </div>
+                    </div>
+                    <br>
+                    <button type="submit" class="btn btn-success btn-sm">Asignar equipo</button>
+                </form>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if asignaciones_equipos %}
+            <table class="table table-sm mb-0">
+                <thead class="thead-light">
+                    <tr><th>Equipo</th><th>Categoría</th><th>Cantidad</th><th>Precio unit.</th><th></th></tr>
+                </thead>
+                <tbody>
+                {% for ae in asignaciones_equipos %}
+                <tr>
+                    <td>{{ ae.equipo.nombre }}</td>
+                    <td>{{ ae.equipo.get_categoria_display }}</td>
+                    <td>{{ ae.cantidad_asignada }}</td>
+                    <td>${{ ae.equipo.precio_unitario }}</td>
+                    <td>
+                        <form method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="eliminar_equipo">
+                            <input type="hidden" name="asignacion_id" value="{{ ae.id }}">
+                            <button type="button" class="btn btn-danger btn-sm btn-eliminar-equipo" title="Remover">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted p-3 mb-0">Sin equipos asignados.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Accesos rápidos -->
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'disposicion_salon' evento.id %}" class="btn btn-outline-info">
+            <i class="fa fa-table"></i> Diseñar disposición de mesas
+        </a>
+        <a href="{% url 'calendario_salones' %}" class="btn btn-outline-secondary">
+            <i class="fa fa-calendar"></i> Ver calendario
+        </a>
+        <button id="btn_checklist" class="btn btn-outline-warning">
+            <i class="fa fa-map-signs"></i> Guía de checklist
+        </button>
+    </div>
+</div><!-- /col -->
+</div><!-- /row -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+
+    // Validación: asignar catering
+    $('#form_asignar_catering').validate({
+        rules: {
+            proveedor_id: { required: true },
+            tipo_servicio: { required: true, minlength: 3 }
+        },
+        messages: {
+            proveedor_id: { required: 'Selecciona un proveedor.' },
+            tipo_servicio: { required: 'Indica el tipo de servicio.' }
+        }
+    });
+
+    // Validación: asignar equipo
+    $('#form_asignar_equipo').validate({
+        rules: {
+            equipo_id: { required: true },
+            cantidad_asignada: { required: true, number: true, min: 1 }
+        },
+        messages: {
+            equipo_id: { required: 'Selecciona un equipo.' },
+            cantidad_asignada: { required: 'Indica la cantidad.', min: 'Mínimo 1 unidad.' }
+        }
+    });
+
+    // Cambiar estado con confirmación SweetAlert2
+    $('#btn_cambiar_estado').on('click', function() {
+        const estado = $('#select_estado').val();
+        if (!estado) {
+            Swal.fire('Atención', 'Selecciona un nuevo estado primero.', 'warning');
+            return;
+        }
+        const estadoLabel = $('#select_estado option:selected').text();
+        Swal.fire({
+            title: '¿Cambiar estado?',
+            text: `El evento pasará a: "${estadoLabel}"`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, cambiar',
+            cancelButtonText: 'Cancelar'
+        }).then(result => {
+            if (result.isConfirmed) $('#form_estado').submit();
+        });
+    });
+
+    // Eliminar catering con confirmación
+    $(document).on('click', '.btn-eliminar-catering', function(e) {
+        e.preventDefault();
+        const form = $(this).closest('form');
+        Swal.fire({
+            title: '¿Remover proveedor?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Sí, remover',
+            cancelButtonText: 'Cancelar'
+        }).then(result => { if (result.isConfirmed) form.submit(); });
+    });
+
+    // Eliminar equipo con confirmación
+    $(document).on('click', '.btn-eliminar-equipo', function(e) {
+        e.preventDefault();
+        const form = $(this).closest('form');
+        Swal.fire({
+            title: '¿Remover equipo?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Sí, remover',
+            cancelButtonText: 'Cancelar'
+        }).then(result => { if (result.isConfirmed) form.submit(); });
+    });
+
+    // ============================================================
+    // GUÍA DRIVER.JS — Checklist del coordinador de eventos
+    // ============================================================
+    const driver = window.driver.js.driver;
+
+    const guia = driver({
+        showProgress: true,
+        progressText: 'Paso {{current}} de {{total}}',
+        nextBtnText: 'Siguiente →',
+        prevBtnText: '← Anterior',
+        doneBtnText: '✓ Listo',
+        animate: true,
+        steps: [
+            {
+                element: '.card-header.bg-dark',
+                popover: {
+                    title: '① Revisa la información del evento',
+                    description: 'Antes de empezar, verifica los datos: cliente, salón, fechas de montaje, evento y desmontaje, número de invitados y precio final.',
+                    side: 'right',
+                    align: 'start'
+                }
+            },
+            {
+                element: '#form_catering_nuevo',
+                popover: {
+                    title: '② Coordina el catering',
+                    description: 'Haz clic en <b>+ Agregar</b> para asignar uno o más proveedores de catering. Indica el tipo de servicio de cada uno (ej: comida principal, postres, bar).',
+                    side: 'top',
+                    align: 'start'
+                }
+            },
+            {
+                element: '#form_equipo_nuevo',
+                popover: {
+                    title: '③ Asigna los equipos audiovisuales',
+                    description: 'Agrega los equipos necesarios para el evento. Verifica la disponibilidad mostrada: solo aparecen las unidades libres para estas fechas.',
+                    side: 'top',
+                    align: 'start'
+                }
+            },
+            {
+                element: '#form_estado',
+                popover: {
+                    title: '④ Actualiza el estado del evento',
+                    description: 'Sigue el flujo: <b>Confirmado → En montaje → En curso → En desmontaje → Finalizado</b>. Cambia el estado conforme avance el evento.',
+                    side: 'left',
+                    align: 'start'
+                }
+            },
+            {
+                element: 'a[href*="disposicion"]',
+                popover: {
+                    title: '⑤ Diseña la disposición de mesas',
+                    description: 'Usa el editor interactivo para organizar las mesas y sillas del salón. Puedes arrastrar y soltar cada elemento hasta lograr la distribución ideal.',
+                    side: 'top',
+                    align: 'start'
+                }
+            },
+            {
+                element: '#btn_checklist',
+                popover: {
+                    title: '✓ ¡Checklist completa!',
+                    description: 'Puedes relanzar esta guía en cualquier momento usando este botón. ¡Buena suerte con el evento!',
+                    side: 'top',
+                    align: 'center'
+                }
+            }
+        ]
+    });
+
+    // Botón para iniciar la guía manualmente
+    document.getElementById('btn_checklist').addEventListener('click', function() {
+        guia.drive();
+    });
+
+    // Lanzar automáticamente la primera vez que el coordinador abre esta página
+    // (se guarda en localStorage para no repetirlo en visitas posteriores)
+    const keyVisita = 'checklist_vista_evento_{{ evento.id }}';
+    if (!localStorage.getItem(keyVisita)) {
+        setTimeout(function() { guia.drive(); }, 600);
+        localStorage.setItem(keyVisita, '1');
+    }
+
+});//end ready
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container" style="padding-top: 40px;">
+<div class="row">
+<div class="col-md-2"></div>
+<div class="col-md-8">
+<h1><b>Asignar Coordinador</b></h1>
+<div class="alert alert-info">
+    <b>Evento:</b> {{ evento.salon.nombre }}
+    &nbsp;|&nbsp;
+    <b>Fecha:</b> {{ evento.fecha_evento_inicio|date:"d/m/Y H:i" }}
+    &nbsp;|&nbsp;
+    <b>Cliente:</b> {{ evento.cotizacion_origen.cliente.user.get_full_name }}
+</div>
+<hr>
+
+{% if coordinadores %}
+<form id="form_asignar" method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label><b>Selecciona el coordinador: <span class="text-danger">*</span></b></label>
+        <select class="form-control" name="coordinador" id="coordinador">
+            <option value="" disabled {% if not evento.coordinador %}selected{% endif %}>— Selecciona un coordinador —</option>
+            {% for coord in coordinadores %}
+                <option value="{{ coord.id }}" {% if evento.coordinador_id == coord.id %}selected{% endif %}>
+                    {{ coord.user.get_full_name }}
+                    {% if coord.user.email %}({{ coord.user.email }}){% endif %}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    {% if evento.coordinador %}
+    <p class="text-muted">Coordinador actual: <b>{{ evento.coordinador.user.get_full_name }}</b></p>
+    {% endif %}
+    <button class="btn btn-success" type="submit">
+        <i class="fa fa-user-plus"></i> Asignar Coordinador
+    </button>
+    <a href="{% url 'panel_cotizaciones' %}" class="btn btn-secondary">
+        <i class="fa fa-times"></i> Cancelar
+    </a>
+</form>
+{% else %}
+<div class="alert alert-warning">
+    <i class="fa fa-exclamation-triangle"></i>
+    No hay coordinadores registrados en el sistema. Por favor crea uno desde el panel de administración de Django.
+</div>
+<a href="{% url 'panel_cotizaciones' %}" class="btn btn-secondary">Volver al panel</a>
+{% endif %}
+</div>
+</div>
+</div>
+<br><br><br><br><br>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('#form_asignar').validate({
+        rules: {
+            coordinador: { required: true }
+        },
+        messages: {
+            coordinador: { required: 'Debes seleccionar un coordinador.' }
+        }
+    });
+});
+</script>
+{% endblock %}

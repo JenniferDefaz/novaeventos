@@ -1,0 +1,366 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container" style="padding-top: 40px;">
+<div class="row">
+<div class="col-md-2"></div>
+<div class="col-md-8">
+<h1><b>Registrar Cotización</b></h1>
+<p class="text-muted">Úsalo cuando un cliente solicite su cotización por teléfono o en persona.</p>
+<hr>
+
+<form id="form_cotizacion_admin" method="post">
+    {% csrf_token %}
+
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            <label><b>Cliente: <span class="text-danger">*</span></b></label>
+            <select class="form-control" name="cliente" id="cliente">
+                <option value="" disabled selected>Selecciona un cliente...</option>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}">{{ cliente.user.get_full_name }} — {{ cliente.user.email }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group col-md-6">
+            <label><b>Salón: <span class="text-danger">*</span></b></label>
+            <select class="form-control" name="salon" id="salon">
+                <option value="" disabled selected>Selecciona un salón...</option>
+                {% for salon in salones %}
+                    <option value="{{ salon.id }}" data-capacidad="{{ salon.capacidad }}" data-precio-base="{{ salon.precio_base }}">
+                        {{ salon.nombre }} (cap. {{ salon.capacidad }})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group col-md-4">
+            <label><b>Fecha del evento: <span class="text-danger">*</span></b></label>
+            <input class="form-control" type="date" name="fecha_evento_tentativa" id="fecha_evento_tentativa">
+        </div>
+        <div class="form-group col-md-4">
+            <label><b>Hora inicio: <span class="text-danger">*</span></b></label>
+            <input class="form-control" type="time" name="hora_inicio_tentativa" id="hora_inicio_tentativa">
+        </div>
+        <div class="form-group col-md-4">
+            <label><b>Hora fin: <span class="text-danger">*</span></b></label>
+            <input class="form-control" type="time" name="hora_fin_tentativa" id="hora_fin_tentativa">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label><b>Número de invitados: <span class="text-danger">*</span></b></label>
+        <input class="form-control" type="number" name="numero_invitados" id="numero_invitados" min="1">
+        <small class="form-text text-muted" id="ayuda_capacidad"></small>
+    </div>
+
+    <hr>
+
+    <!-- ===================== CATERING: selección múltiple ===================== -->
+    <div class="form-group">
+        <label><b>Proveedores de catering:</b> <small class="text-muted">(puedes elegir varios)</small></label>
+        <div class="card">
+            <div class="list-group list-group-flush" id="lista_catering">
+                {% for proveedor in proveedores_catering %}
+                <label class="list-group-item d-flex justify-content-between align-items-center item-catering">
+                    <span>
+                        <input type="checkbox"
+                               class="chk-catering mr-2"
+                               name="proveedores_catering"
+                               value="{{ proveedor.id }}"
+                               data-precio="{{ proveedor.precio_por_persona }}">
+                        <b>{{ proveedor.nombre_empresa }}</b>
+                        <small class="text-muted">— {{ proveedor.especialidad }}</small>
+                    </span>
+                    <span class="badge badge-light">${{ proveedor.precio_por_persona }} / persona</span>
+                </label>
+                {% empty %}
+                <div class="list-group-item text-muted">No hay proveedores de catering registrados.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ================== AUDIOVISUALES: selección múltiple + cantidad, agrupados por categoría ================== -->
+    <div class="form-group">
+        <label><b>Equipos audiovisuales:</b> <small class="text-muted">(puedes elegir varios y su cantidad)</small></label>
+        <div class="card">
+            {% regroup equipos_audiovisuales by get_categoria_display as equipos_por_categoria %}
+            {% for grupo in equipos_por_categoria %}
+                <div class="list-group-item bg-light py-1"><small><b>{{ grupo.grouper }}</b></small></div>
+                <div class="list-group list-group-flush" id="lista_audiovisuales">
+                {% for equipo in grupo.list %}
+                <div class="list-group-item item-audiovisual">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>
+                            <input type="checkbox"
+                                   class="chk-equipo mr-2"
+                                   name="equipos_audiovisuales"
+                                   value="{{ equipo.id }}"
+                                   data-precio="{{ equipo.precio_unitario }}"
+                                   data-total-inventario="{{ equipo.cantidad_total }}"
+                                   id="chk_equipo_{{ equipo.id }}">
+                            <label for="chk_equipo_{{ equipo.id }}" class="mb-0">{{ equipo.nombre }}</label>
+                        </span>
+                        <span class="d-flex align-items-center">
+                            <input type="number"
+                                   class="form-control form-control-sm input-cantidad-equipo mr-2"
+                                   style="width: 80px;"
+                                   name="cantidad_equipo_{{ equipo.id }}"
+                                   value="1" min="1" max="{{ equipo.cantidad_total }}"
+                                   disabled>
+                            <span class="badge badge-light">${{ equipo.precio_unitario }} c/u</span>
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+                </div>
+            {% empty %}
+                <div class="list-group-item text-muted">No hay equipos audiovisuales registrados.</div>
+            {% endfor %}
+        </div>
+        <small class="form-text text-muted">
+            La cantidad mostrada es el inventario total. La disponibilidad real para
+            la fecha exacta (considerando montaje/desmontaje de otros eventos) se
+            confirma cuando la cotización se convierte en evento.
+        </small>
+    </div>
+
+    <div class="form-group">
+        <label><b>Precio total estimado ($):</b> <small class="text-muted">(se sugiere automáticamente, puedes ajustarlo)</small></label>
+        <input class="form-control" type="number" step="0.01" name="precio_total_estimado" id="precio_total_estimado" min="0.01" max="100000">
+        <small class="form-text text-muted">Salón: $<span id="subtotal_salon">0.00</span> ·
+            Catering: $<span id="subtotal_catering">0.00</span> ·
+            Audiovisuales: $<span id="subtotal_equipos">0.00</span> ·
+            Sugerido: $<span id="total_sugerido">0.00</span></small>
+    </div>
+
+    <button class="btn btn-success" type="submit">
+        <i class="fa fa-save"></i> Registrar Cotización
+    </button>
+    <a href="{% url 'panel_cotizaciones' %}" class="btn btn-secondary">
+        <i class="fa fa-times"></i> Cancelar
+    </a>
+</form>
+<br>
+</div>
+</div>
+</div>
+
+<style>
+label.error{
+    color: #dc3545;
+    font-size: 13px;
+    font-weight: 500;
+    display: block;
+    margin-top: 4px;
+}
+.form-control.error{
+    border-color: #dc3545;
+}
+.item-catering, .item-audiovisual{
+    cursor: pointer;
+}
+.item-catering.item-seleccionado, .item-audiovisual.item-seleccionado{
+    background-color: #f0f9f0;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+
+    const ahora = new Date();
+    const hoy = ahora.getFullYear() + '-'
+        + String(ahora.getMonth() + 1).padStart(2, '0') + '-'
+        + String(ahora.getDate()).padStart(2, '0');
+    $('#fecha_evento_tentativa').attr('min', hoy);
+
+    // Límite superior razonable: no cotizar a más de 2 años en el futuro
+    const fechaMaxima = new Date();
+    fechaMaxima.setFullYear(fechaMaxima.getFullYear() + 2);
+    const fechaMaximaStr = fechaMaxima.toISOString().split('T')[0];
+    $('#fecha_evento_tentativa').attr('max', fechaMaximaStr);
+
+    // Pre-rellenar desde parámetros GET ?fecha=YYYY-MM-DD&salon=ID (viene del calendario)
+    const params = new URLSearchParams(window.location.search);
+    const paramFecha = params.get('fecha');
+    const paramSalon = params.get('salon');
+    if (paramFecha && paramFecha >= hoy) {
+        $('#fecha_evento_tentativa').val(paramFecha);
+    }
+    if (paramSalon) {
+        $('#salon').val(paramSalon).trigger('change');
+    }
+
+    // Muestra la capacidad del salón elegido, ajusta el máximo de invitados
+    // y recalcula el total sugerido con el precio base del salón.
+    $('#salon').on('change', function() {
+        const $opcion = $(this).find(':selected');
+        const capacidad = $opcion.data('capacidad');
+        if (capacidad) {
+            $('#ayuda_capacidad').text('Capacidad máxima del salón: ' + capacidad + ' personas.');
+            $('#numero_invitados').attr('max', capacidad);
+        }
+        recalcularTotales();
+        $('#form_cotizacion_admin').valid();
+    });
+
+    // ---------- Selección múltiple de catering ----------
+    $('.chk-catering').on('change', function() {
+        $(this).closest('.item-catering').toggleClass('item-seleccionado', this.checked);
+        recalcularTotales();
+    });
+
+    // ---------- Selección múltiple de equipos audiovisuales ----------
+    $('.chk-equipo').on('change', function() {
+        const $fila = $(this).closest('.item-audiovisual');
+        const $cantidad = $fila.find('.input-cantidad-equipo');
+        $fila.toggleClass('item-seleccionado', this.checked);
+        $cantidad.prop('disabled', !this.checked);
+        if (!this.checked) {
+            $cantidad.val(1);
+        } else {
+            $cantidad.valid();
+        }
+        recalcularTotales();
+    });
+
+    $('.input-cantidad-equipo').on('input', recalcularTotales);
+    $('#numero_invitados').on('input', recalcularTotales);
+
+    function recalcularTotales() {
+        const subtotalSalon = parseFloat($('#salon').find(':selected').data('precio-base')) || 0;
+
+        const invitados = parseInt($('#numero_invitados').val()) || 0;
+        let subtotalCatering = 0;
+        $('.chk-catering:checked').each(function() {
+            subtotalCatering += parseFloat($(this).data('precio')) * invitados;
+        });
+
+        let subtotalEquipos = 0;
+        $('.chk-equipo:checked').each(function() {
+            const $fila = $(this).closest('.item-audiovisual');
+            const cantidad = parseInt($fila.find('.input-cantidad-equipo').val()) || 1;
+            subtotalEquipos += parseFloat($(this).data('precio')) * cantidad;
+        });
+
+        const total = subtotalSalon + subtotalCatering + subtotalEquipos;
+        $('#subtotal_salon').text(subtotalSalon.toFixed(2));
+        $('#subtotal_catering').text(subtotalCatering.toFixed(2));
+        $('#subtotal_equipos').text(subtotalEquipos.toFixed(2));
+        $('#total_sugerido').text(total.toFixed(2));
+
+        if (!$('#precio_total_estimado').data('editado_manual')) {
+            $('#precio_total_estimado').val(total > 0 ? total.toFixed(2) : '');
+        }
+    }
+
+    $('#precio_total_estimado').on('input', function() {
+        $(this).data('editado_manual', true);
+    });
+
+    // ---------- Reglas personalizadas ----------
+
+    $.validator.addMethod('fechaNoPasada', function(value, element) {
+        if (!value) return true;
+        const fechaElegida = new Date(value + 'T00:00:00');
+        const fechaHoy = new Date(new Date().toDateString());
+        return fechaElegida >= fechaHoy;
+    }, 'La fecha no puede ser en el pasado.');
+
+    $.validator.addMethod('fechaNoMuyLejana', function(value, element) {
+        if (!value) return true;
+        const fechaElegida = new Date(value + 'T00:00:00');
+        return fechaElegida <= fechaMaxima;
+    }, 'La fecha no puede ser mayor a 2 años en el futuro.');
+
+    $.validator.addMethod('horaFinMayor', function(value, element) {
+        const inicio = $('#hora_inicio_tentativa').val();
+        return this.optional(element) || !inicio || value > inicio;
+    }, 'La hora de fin debe ser posterior a la hora de inicio.');
+
+    // El evento debe durar al menos 1 hora (evita "18:00 a 18:01")
+    $.validator.addMethod('duracionMinima', function(value, element) {
+        const inicio = $('#hora_inicio_tentativa').val();
+        if (!inicio || !value) return true;
+
+        const [hIni, mIni] = inicio.split(':').map(Number);
+        const [hFin, mFin] = value.split(':').map(Number);
+        const minutosInicio = hIni * 60 + mIni;
+        const minutosFin = hFin * 60 + mFin;
+
+        return (minutosFin - minutosInicio) >= 60;
+    }, 'El evento debe durar al menos 1 hora.');
+
+    $.validator.addMethod('noSuperaCapacidad', function(value, element) {
+        const capacidad = $('#salon').find(':selected').data('capacidad');
+        return this.optional(element) || !capacidad || parseInt(value) <= parseInt(capacidad);
+    }, 'El número de invitados supera la capacidad del salón.');
+
+    // Solo números enteros (sin decimales) para invitados y cantidades
+    $.validator.addMethod('soloEnteros', function(value, element) {
+        return this.optional(element) || /^\d+$/.test(value);
+    }, 'Ingresa un número entero, sin decimales.');
+
+    $.validator.addMethod('cantidadNoSuperaInventario', function(value, element) {
+        const totalInventario = $(element).closest('.item-audiovisual').find('.chk-equipo').data('total-inventario');
+        return this.optional(element) || !totalInventario || parseInt(value) <= parseInt(totalInventario);
+    }, 'No hay tantas unidades en el inventario de este equipo.');
+
+    // Reglas dinámicas para cada input de cantidad de equipo
+    // (jQuery Validate ignora automáticamente los campos deshabilitados)
+    $('.input-cantidad-equipo').each(function() {
+        $(this).rules('add', {
+            required: true,
+            soloEnteros: true,
+            min: 1,
+            cantidadNoSuperaInventario: true
+        });
+    });
+
+    $('#form_cotizacion_admin').validate({
+        errorElement: 'label',
+        errorPlacement: function(error, element) {
+            error.insertAfter(element);
+        },
+        highlight: function(element) {
+            $(element).addClass('error');
+        },
+        unhighlight: function(element) {
+            $(element).removeClass('error');
+        },
+        rules: {
+            cliente: { required: true },
+            salon: { required: true },
+            fecha_evento_tentativa: { required: true, fechaNoPasada: true, fechaNoMuyLejana: true },
+            hora_inicio_tentativa: { required: true },
+            hora_fin_tentativa: { required: true, horaFinMayor: true, duracionMinima: true },
+            numero_invitados: { required: true, soloEnteros: true, min: 1, noSuperaCapacidad: true },
+            precio_total_estimado: { number: true, min: 0.01, max: 100000 }
+        },
+        messages: {
+            cliente: { required: 'Selecciona un cliente.' },
+            salon: { required: 'Selecciona un salón.' },
+            fecha_evento_tentativa: {
+                required: 'Ingresa la fecha del evento.'
+            },
+            hora_inicio_tentativa: { required: 'Ingresa la hora de inicio.' },
+            hora_fin_tentativa: {
+                required: 'Ingresa la hora de fin.'
+            },
+            numero_invitados: {
+                required: 'Ingresa el número de invitados.',
+                min: 'Debe ser al menos 1.'
+            },
+            precio_total_estimado: {
+                min: 'Debe ser mayor a cero si lo defines.',
+                max: 'El precio parece demasiado alto, verifica el valor.'
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

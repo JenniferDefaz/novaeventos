@@ -1,0 +1,196 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi Reporte — Coordinador NovaEventos</title>
+    <style>
+        @page { size: A4; margin: 2cm; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #2a2929;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .reporte-header {
+            text-align: center;
+            border-bottom: 3px solid #D4AF37;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .reporte-header h1 { margin: 0; font-size: 24px; color: #2a2929; }
+        .reporte-header p  { margin: 4px 0 0; color: #888; font-size: 13px; }
+
+        .resumen-cards {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .resumen-card {
+            flex: 1;
+            min-width: 110px;
+            border: 1.5px solid #eee;
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+        }
+        .resumen-card .valor   { font-size: 22px; font-weight: 700; color: #0B3C5D; }
+        .resumen-card .etiqueta { font-size: 11px; color: #888; margin-top: 4px; }
+
+        h2 {
+            font-size: 16px;
+            border-left: 4px solid #D4AF37;
+            padding-left: 10px;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        th, td { border: 1px solid #ddd; padding: 7px 10px; font-size: 12px; text-align: left; }
+        th { background: #0B3C5D; color: #fff; }
+        tr:nth-child(even) { background: #f8f8f8; }
+
+        .badge-confirmado  { background:#0B3C5D; color:#fff;    padding:2px 8px; border-radius:10px; font-size:11px; }
+        .badge-montaje     { background:#FFC107; color:#2a2929; padding:2px 8px; border-radius:10px; font-size:11px; }
+        .badge-curso       { background:#17a2b8; color:#fff;    padding:2px 8px; border-radius:10px; font-size:11px; }
+        .badge-desmontaje  { background:#FD7E14; color:#fff;    padding:2px 8px; border-radius:10px; font-size:11px; }
+        .badge-finalizado  { background:#28a745; color:#fff;    padding:2px 8px; border-radius:10px; font-size:11px; }
+        .badge-cancelado   { background:#dc3545; color:#fff;    padding:2px 8px; border-radius:10px; font-size:11px; }
+
+        .total-row td { font-weight: 700; background: #fdf6e3; }
+
+        .botones-accion { text-align: center; margin-bottom: 28px; }
+        .btn-imprimir {
+            background: #0B3C5D; color: #fff;
+            border: none; border-radius: 8px;
+            padding: 11px 26px; font-size: 14px;
+            font-weight: 600; cursor: pointer;
+        }
+        .btn-imprimir:hover { background: #D4AF37; color: #2a2929; }
+
+        .footer-reporte {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        @media print {
+            .botones-accion { display: none; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="botones-accion">
+    <button class="btn-imprimir" onclick="window.print()">
+        🖨️ Imprimir / Guardar como PDF
+    </button>
+</div>
+
+<div class="reporte-header">
+    <h1>NovaEventos — Reporte de Coordinador</h1>
+    <p>
+        Coordinador: <b>{{ coordinador_nombre }}</b>
+        &nbsp;|&nbsp;
+        Generado el {{ fecha_generacion|date:"d/m/Y H:i" }}
+    </p>
+</div>
+
+<!-- Tarjetas resumen -->
+<div class="resumen-cards">
+    <div class="resumen-card">
+        <div class="valor">{{ total_eventos }}</div>
+        <div class="etiqueta">Total eventos</div>
+    </div>
+    <div class="resumen-card">
+        <div class="valor">{{ total_activos }}</div>
+        <div class="etiqueta">Activos</div>
+    </div>
+    <div class="resumen-card">
+        <div class="valor">{{ total_finalizados }}</div>
+        <div class="etiqueta">Finalizados</div>
+    </div>
+    <div class="resumen-card">
+        <div class="valor">{{ total_cancelados }}</div>
+        <div class="etiqueta">Cancelados</div>
+    </div>
+    <div class="resumen-card">
+        <div class="valor">${{ ingresos_gestionados|floatformat:2 }}</div>
+        <div class="etiqueta">Ingresos gestionados</div>
+    </div>
+</div>
+
+<!-- Historial completo de eventos -->
+<h2>1. Historial de Eventos Asignados</h2>
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Salón</th>
+            <th>Cliente</th>
+            <th>Fecha evento</th>
+            <th>Estado</th>
+            <th>Precio final ($)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ev in eventos %}
+        <tr>
+            <td>{{ ev.id }}</td>
+            <td>{{ ev.salon.nombre }}</td>
+            <td>{{ ev.cotizacion_origen.cliente.user.get_full_name }}</td>
+            <td>{{ ev.fecha_evento_inicio|date:"d/m/Y H:i" }}</td>
+            <td>
+                {% if ev.estado == 'CONFIRMADO' %}
+                    <span class="badge-confirmado">Confirmado</span>
+                {% elif ev.estado == 'EN_MONTAJE' %}
+                    <span class="badge-montaje">En montaje</span>
+                {% elif ev.estado == 'EN_CURSO' %}
+                    <span class="badge-curso">En curso</span>
+                {% elif ev.estado == 'EN_DESMONTAJE' %}
+                    <span class="badge-desmontaje">En desmontaje</span>
+                {% elif ev.estado == 'FINALIZADO' %}
+                    <span class="badge-finalizado">Finalizado</span>
+                {% else %}
+                    <span class="badge-cancelado">Cancelado</span>
+                {% endif %}
+            </td>
+            <td>${{ ev.precio_final|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">No tienes eventos asignados aún.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Eventos por mes -->
+<h2>2. Eventos Gestionados por Mes — Últimos 12 Meses</h2>
+<table>
+    <thead>
+        <tr><th>Mes</th><th>Cantidad de eventos</th></tr>
+    </thead>
+    <tbody>
+        {% for m in eventos_por_mes_tabla %}
+        <tr>
+            <td>{{ m.nombre }}</td>
+            <td>{{ m.cantidad }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+            <td>Total acumulado</td>
+            <td>{{ total_eventos }}</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="footer-reporte">
+    NovaEventos © {{ fecha_generacion|date:"Y" }} — Reporte personal del coordinador generado automáticamente
+</div>
+
+</body>
+</html>

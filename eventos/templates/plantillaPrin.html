@@ -1,0 +1,390 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<title>NovaEventos — Gestión de Eventos</title>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="description" content="Gestión de Eventos, Banquetes y Centros de Convenciones">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<!-- CSS del template (The Venue) -->
+	<link rel="stylesheet" type="text/css" href="{% static 'styles/bootstrap-4.1.2/bootstrap.min.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'plugins/font-awesome-4.7.0/css/font-awesome.min.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'plugins/OwlCarousel2-2.2.1/owl.carousel.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'plugins/OwlCarousel2-2.2.1/owl.theme.default.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'plugins/OwlCarousel2-2.2.1/animate.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'plugins/colorbox/colorbox.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'plugins/jquery-datepicker/jquery-ui.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'plugins/jquery-timepicker/jquery.timepicker.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'styles/main_styles.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'styles/responsive.css' %}">
+
+	<!-- FullCalendar 6 no necesita CSS aparte: los estilos vienen incluidos en el JS -->
+
+	<!-- Driver.js: guía paso a paso para la checklist del coordinador -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
+
+	<!-- DataTables + Bootstrap4 -->
+	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
+
+	<!-- Bootstrap Fileinput (Krajee) -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-fileinput@5.5.4/css/fileinput.min.css">
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+</head>
+<body>
+<div class="super_container">
+
+	<!-- ============================================
+	     MENÚ 1: Hamburger (overlay de pantalla completa)
+	     Se abre al hacer click en el ícono ☰
+	     ============================================ -->
+	<div class="hamburger_bar trans_400 d-flex flex-row align-items-center justify-content-start">
+		<div class="hamburger">
+			<div class="menu_toggle d-flex flex-row align-items-center justify-content-start">
+				<span>menu</span>
+				<div class="hamburger_container">
+					<div class="menu_hamburger">
+						<div class="line_1 hamburger_lines"></div>
+						<div class="line_2 hamburger_lines"></div>
+						<div class="line_3 hamburger_lines"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="menu trans_800">
+		<div class="menu_content d-flex flex-column align-items-center justify-content-center text-center">
+			<ul>
+				<li><a href="{% url 'inicio' %}">inicio</a></li>
+				<li><a href="{% url 'catalogo_salones' %}">salones</a></li>
+
+				{% if user.is_authenticated %}
+					{% if user.usuario.es_administrador %}
+						<li><a href="{% url 'panel_cotizaciones' %}">cotizaciones</a></li>
+						<li><a href="{% url 'listado_salones_admin' %}">salones (admin)</a></li>
+						<li><a href="{% url 'listado_catering_admin' %}">catering</a></li>
+						<li><a href="{% url 'listado_equipos_admin' %}">equipos</a></li>
+						<li><a href="{% url 'calendario_salones' %}">calendario</a></li>
+					{% elif user.usuario.es_coordinador %}
+						<li><a href="{% url 'mis_eventos_asignados' %}">mis eventos</a></li>
+						<li><a href="{% url 'calendario_salones' %}">calendario</a></li>
+						<li><a href="{% url 'dashboard_coordinador' %}">mi dashboard</a></li>
+					{% else %}
+						<li><a href="{% url 'mis_cotizaciones' %}">mis cotizaciones</a></li>
+						<li><a href="{% url 'calendario_salones' %}">calendario</a></li>
+						<li><a href="{% url 'dashboard_cliente' %}">mi dashboard</a></li>
+					{% endif %}
+					<li><a href="{% url 'cerrar_sesion' %}">cerrar sesión</a></li>
+				{% else %}
+					<li><a href="{% url 'iniciar_sesion' %}">iniciar sesión</a></li>
+					<li><a href="{% url 'registro_cliente' %}">registrarme</a></li>
+				{% endif %}
+			</ul>
+		</div>
+		<div class="menu_reservations_phone ml-auto">Contáctanos: +593 99 123 4567</div>
+	</div>
+
+	<!-- ============================================
+	     MENÚ 2: Header (barra de navegación normal,
+	     siempre visible arriba de la página)
+	     ============================================ -->
+	<header class="header">
+		<div class="container">
+			<div class="row">
+				<div class="col">
+					<div class="header_content d-flex flex-row align-items-center justify-content-start">
+						<div class="logo">
+							<a href="{% url 'catalogo_salones' %}">
+								<div>NovaEventos</div>
+								<div>eventos</div>
+							</a>
+						</div>
+						<nav class="main_nav">
+							<ul class="d-flex flex-row align-items-center justify-content-start">
+								<li><a href="{% url 'inicio' %}">Inicio</a></li>
+								<li><a href="{% url 'catalogo_salones' %}">Salones</a></li>
+
+								{% if user.is_authenticated %}
+									{% if user.usuario.es_administrador %}
+										<li><a href="{% url 'panel_cotizaciones' %}">Cotizaciones</a></li>
+										<li class="dropdown">
+											<a href="#" id="dropdownGestion" data-toggle="dropdown"
+											   aria-haspopup="true" aria-expanded="false">
+												Gestión ▾
+											</a>
+											<div class="dropdown-menu" aria-labelledby="dropdownGestion">
+												<a class="dropdown-item" href="{% url 'listado_salones_admin' %}">Salones</a>
+												<a class="dropdown-item" href="{% url 'listado_catering_admin' %}">Catering</a>
+												<a class="dropdown-item" href="{% url 'listado_equipos_admin' %}">Equipos</a>
+												
+											</div>
+										</li>
+										<li><a href="{% url 'calendario_salones' %}">Calendario</a></li>
+										<li><a href="{% url 'dashboard_admin' %}">Dashboard</a></li>
+									{% elif user.usuario.es_coordinador %}
+										<li><a href="{% url 'mis_eventos_asignados' %}">Mis Eventos</a></li>
+										<li><a href="{% url 'calendario_salones' %}">Calendario</a></li>
+										<li><a href="{% url 'dashboard_coordinador' %}">Mi Dashboard</a></li>
+									{% else %}
+										<li><a href="{% url 'mis_cotizaciones' %}">Mis Cotizaciones</a></li>
+										<li><a href="{% url 'calendario_salones' %}">Calendario</a></li>
+										<li><a href="{% url 'dashboard_cliente' %}">Mi Dashboard</a></li>
+									{% endif %}
+								{% endif %}
+							</ul>
+						</nav>
+
+						<div class="reservations_phone ml-auto">
+							{% if user.is_authenticated %}
+								<a href="{% url 'cerrar_sesion' %}" style="color:inherit;">Cerrar sesión</a>
+							{% else %}
+								<a href="{% url 'iniciar_sesion' %}" style="color:inherit;">Iniciar sesión</a>
+								&nbsp;|&nbsp;
+								<a href="{% url 'registro_cliente' %}" style="color:inherit;">Registrarme</a>
+							{% endif %}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<style>
+
+		.super_container > .container {
+			margin-top: 160px;
+		}
+
+		header.header {
+			background-color: #2a2929;
+			border-bottom: 1px solid rgba(201, 168, 152, 0.2);
+		}
+
+		/* Dropdown "Gestión" con el mismo estilo oscuro del header */
+		.main_nav .dropdown-menu {
+			background-color: #2a2929;
+			border: 1px solid rgba(201, 168, 152, 0.3);
+			border-radius: 4px;
+			margin-top: 10px;
+		}
+		.main_nav .dropdown-menu .dropdown-item {
+			color: #f0e9e3;
+			padding: 8px 20px;
+			font-size: 0.9rem;
+		}
+		.main_nav .dropdown-menu .dropdown-item:hover {
+			background-color: #c9a898;
+			color: #2a2929;
+		}
+
+		/* ============================================
+			Ajustes de legibilidad para contenido en
+			fondo blanco (fuera del header/reservations)
+			============================================ */
+
+		.super_container > .container label,
+		.super_container > .container .form-group label {
+			color: #2a2929;
+			font-size: 0.95rem;
+			font-weight: 600;
+		}
+
+		.super_container > .container p,
+		.super_container > .container td,
+		.super_container > .container th {
+			font-size: 0.95rem;
+			color: #3a3a3a;
+		}
+
+		.super_container > .container small,
+		.super_container > .container .text-muted {
+			font-size: 0.85rem;
+			color: #6b6b6b !important;
+		}
+		.super_container > .container small.text-danger {
+			color: #dc3545 !important;
+			font-weight: 600;
+		}
+
+		.super_container > .container input.form-control,
+		.super_container > .container select.form-control,
+		.super_container > .container textarea.form-control {
+			font-size: 0.95rem;
+			color: #2a2929;
+		}
+
+		.super_container > .container h1 { font-size: 2.1rem; }
+		.super_container > .container h2 { font-size: 1.6rem; }
+		.super_container > .container h5 { font-size: 1.1rem; }
+
+		.reservations {
+			margin-top: 60px !important;
+			position: relative;
+			z-index: 1;
+			clear: both;
+		}
+
+		.super_container > .container {
+			position: relative;
+			z-index: 2;
+		}
+
+	</style>
+
+	{% block contenido %}
+	{% endblock %}
+
+	<!-- Banner de cotización rápida -->
+	<div class="reservations text-center">
+		<div class="parallax_background parallax-window"
+			data-parallax="scroll"
+			data-image-src="{% static 'images/reservations.jpg' %}"
+			data-speed="0.8">
+		</div>
+		<div class="container">
+			<div class="row">
+				<div class="col">
+					<div class="reservations_content d-flex flex-column align-items-center justify-content-center">
+						<div class="res_stars page_subtitle">
+							Tu evento perfecto
+						</div>
+						<div class="res_title">
+							¿Listo para organizar tu evento?
+						</div>
+						<p class="text-white mb-4">Elige tu salón y solicita una cotización en minutos.</p>
+						<a href="{% url 'catalogo_salones' %}" class="res_button">
+							Ver Salones Disponibles
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Footer -->
+	<footer class="footer">
+		<div class="container">
+			<div class="row">
+				<div class="col-lg-3 footer_col">
+					<div class="footer_logo">
+						<div class="footer_logo_title">NovaEventos</div>
+						<div class="footer_logo_subtitle">eventos</div>
+					</div>
+					<div class="copyright">
+						<p style="line-height:1.2;">
+							Copyright &copy;
+							<script>document.write(new Date().getFullYear());</script>
+							Todos los derechos reservados
+						</p>
+					</div>
+				</div>
+				<div class="col-lg-6 footer_col">
+					<div class="footer_about">
+						<p>
+							The Venue es tu centro de eventos y convenciones de confianza.
+							Contamos con salones para bodas, conferencias, graduaciones y
+							toda clase de celebraciones, con servicio de catering y
+							equipos audiovisuales de primera calidad.
+						</p>
+					</div>
+				</div>
+				<div class="col-lg-3 footer_col">
+					<div class="footer_contact">
+						<ul>
+							<li class="d-flex flex-row align-items-start justify-content-start">
+								<div><div class="footer_contact_title">Dirección:</div></div>
+								<div class="footer_contact_text">Av. Principal y Secundaria, Ecuador</div>
+							</li>
+							<li class="d-flex flex-row align-items-start justify-content-start">
+								<div><div class="footer_contact_title">Teléfono:</div></div>
+								<div class="footer_contact_text">+593 99 123 4567</div>
+							</li>
+							<li class="d-flex flex-row align-items-start justify-content-start">
+								<div><div class="footer_contact_title">Email:</div></div>
+								<div class="footer_contact_text">contacto@thevenue.com</div>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</footer>
+</div>
+
+<!-- JavaScript del template (The Venue) -->
+<script src="{% static 'js/jquery-3.2.1.min.js' %}"></script>
+<script src="{% static 'styles/bootstrap-4.1.2/popper.js' %}"></script>
+<script src="{% static 'styles/bootstrap-4.1.2/bootstrap.min.js' %}"></script>
+<script src="{% static 'plugins/greensock/TweenMax.min.js' %}"></script>
+<script src="{% static 'plugins/greensock/TimelineMax.min.js' %}"></script>
+<script src="{% static 'plugins/scrollmagic/ScrollMagic.min.js' %}"></script>
+<script src="{% static 'plugins/greensock/animation.gsap.min.js' %}"></script>
+<script src="{% static 'plugins/greensock/ScrollToPlugin.min.js' %}"></script>
+<script src="{% static 'plugins/OwlCarousel2-2.2.1/owl.carousel.js' %}"></script>
+<script src="{% static 'plugins/easing/easing.js' %}"></script>
+<script src="{% static 'plugins/parallax-js-master/parallax.min.js' %}"></script>
+<script src="{% static 'plugins/colorbox/jquery.colorbox-min.js' %}"></script>
+<script src="{% static 'plugins/jquery-datepicker/jquery-ui.js' %}"></script>
+<script src="{% static 'plugins/jquery-timepicker/jquery.timepicker.js' %}"></script>
+<script src="{% static 'js/custom.js' %}"></script>
+
+<!-- Validaciones y mensajes -->
+<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/additional-methods.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- jQuery UI completo (draggable/droppable): diseño de mesas y sillas -->
+<script src="https://cdn.jsdelivr.net/npm/jquery-ui-dist@1.13.2/jquery-ui.min.js"></script>
+
+<!-- FullCalendar: calendario de reservas de salones -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/locales/es.global.min.js"></script>
+
+<!-- Hotkeys-js: atajos de teclado para aprobar cotizaciones -->
+<script src="https://cdn.jsdelivr.net/npm/hotkeys-js@3.13.7/dist/hotkeys.min.js"></script>
+
+<!-- Driver.js: guía paso a paso de la checklist del coordinador -->
+<script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+
+<!-- DataTables + Bootstrap4 -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+
+<!-- Bootstrap Fileinput (Krajee) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-fileinput@5.5.4/js/fileinput.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-fileinput@5.5.4/js/locales/es.js"></script>
+
+<!-- Chart.js: gráficos del dashboard e informes -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+{% if messages %}
+    {% for mensaje in messages %}
+    <script>
+        Swal.fire({
+            title: '{% if mensaje.tags == "error" %}Error{% elif mensaje.tags == "warning" %}Atención{% else %}Confirmación{% endif %}',
+            text: '{{ mensaje|escapejs }}',
+            icon: '{% if mensaje.tags == "error" %}error{% elif mensaje.tags == "warning" %}warning{% else %}success{% endif %}',
+            confirmButtonText: 'Aceptar'
+        });
+    </script>
+    {% endfor %}
+{% endif %}
+
+<script>
+$(document).ready(function() {
+    $.validator.setDefaults({
+        errorElement: 'small',
+        errorClass: 'text-danger d-block mt-1',
+        errorPlacement: function(error, element) { error.insertAfter(element); }
+    });
+});
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

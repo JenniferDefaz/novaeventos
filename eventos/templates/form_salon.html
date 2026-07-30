@@ -1,0 +1,152 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container" style="padding-top: 40px;">
+<div class="row">
+<div class="col-md-2"></div>
+<div class="col-md-8">
+<h1><b>{% if salon %}Editar{% else %}Nuevo{% endif %} Salón</b></h1>
+<hr>
+
+<form id="form_salon" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-group">
+        <label><b>Nombre del salón: <span class="text-danger">*</span></b></label>
+        <input class="form-control" type="text" name="nombre" id="nombre"
+               value="{{ salon.nombre|default:'' }}" placeholder="Ej: Salón Imperial">
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            <label><b>Capacidad (personas): <span class="text-danger">*</span></b></label>
+            <input class="form-control" type="number" name="capacidad" id="capacidad"
+                   value="{{ salon.capacidad|default:'' }}" min="1">
+        </div>
+        <div class="form-group col-md-6">
+            <label><b>Precio base ($): <span class="text-danger">*</span></b></label>
+            <input class="form-control" type="number" step="0.01" name="precio_base" id="precio_base"
+                   value="{{ salon.precio_base|default:'' }}" min="0.01">
+        </div>
+    </div>
+    <div class="form-group">
+        <label><b>Descripción:</b></label>
+        <textarea class="form-control" name="descripcion" rows="3">{{ salon.descripcion|default:'' }}</textarea>
+    </div>
+
+    <!-- Imagen con bootstrap-fileinput -->
+    <div class="form-group">
+        <label><b>Fotografía del salón:</b></label>
+        {% if salon.imagen %}
+        <div class="mb-2">
+            <img src="{{ salon.imagen.url }}" alt="Imagen actual"
+                 style="max-width:200px; max-height:130px; object-fit:cover; border-radius:6px; border:1px solid #ddd;">
+            <small class="text-muted d-block mt-1">Imagen actual. Selecciona otra para reemplazarla.</small>
+        </div>
+        {% endif %}
+        <input id="imagen" name="imagen" type="file" accept="image/*"
+               class="file-loading">
+    </div>
+
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" name="activo" id="activo"
+               {% if salon.activo or not salon %}checked{% endif %}>
+        <label class="form-check-label" for="activo">Disponible para cotizaciones</label>
+    </div>
+
+    <button class="btn btn-success" type="submit">
+        <i class="fa fa-save"></i> Guardar
+    </button>
+    <a href="{% url 'listado_salones_admin' %}" class="btn btn-secondary">
+        <i class="fa fa-times"></i> Cancelar
+    </a>
+</form>
+</div>
+</div>
+</div>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Bootstrap Fileinput (Krajee)
+    $('#imagen').fileinput({
+        language: 'es',
+        showUpload: false,
+        showRemove: true,
+        showCaption: true,
+        allowedFileExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+        maxFileSize: 5120,
+        previewFileType: 'image',
+        browseLabel: 'Seleccionar imagen',
+        removeLabel: 'Quitar',
+        browseClass: 'btn btn-outline-secondary',
+        msgSizeTooLarge: 'El archivo es demasiado grande (máximo 5 MB).',
+        msgInvalidFileExtension: 'Tipo de imagen no permitido. Usa JPG, PNG, GIF o WebP.'
+    });
+
+    // Regla personalizada: nombre de salón (letras, números, espacios, acentos y guiones)
+    $.validator.addMethod("nombreSalonValido", function(value, element) {
+        return this.optional(element) || /^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\-]+$/.test(value);
+    }, "El nombre solo puede contener letras, números, espacios y guiones.");
+
+    // Regla personalizada: que no sea solo espacios en blanco
+    $.validator.addMethod("noSoloEspacios", function(value, element) {
+        return this.optional(element) || value.trim().length > 0;
+    }, "Este campo no puede estar vacío ni contener solo espacios.");
+
+    $('#form_salon').validate({
+        rules: {
+            nombre: {
+                required: true,
+                noSoloEspacios: true,
+                nombreSalonValido: true,
+                minlength: 3,
+                maxlength: 100
+            },
+            capacidad: {
+                required: true,
+                digits: true,        // solo enteros, sin decimales ni negativos
+                min: 1,
+                max: 10000            // límite razonable para evitar datos absurdos
+            },
+            precio_base: {
+                required: true,
+                number: true,
+                min: 0.01,
+                max: 999999.99
+            },
+            descripcion: {
+                maxlength: 1000
+            },
+            imagen: {
+                extension: "jpg|jpeg|png|gif|webp"
+            }
+        },
+        messages: {
+            nombre: {
+                required: 'El nombre es obligatorio.',
+                minlength: 'Debe tener al menos 3 caracteres.',
+                maxlength: 'No puede superar los 100 caracteres.'
+            },
+            capacidad: {
+                required: 'La capacidad es obligatoria.',
+                digits: 'Ingresa un número entero, sin decimales.',
+                min: 'Mínimo 1 persona.',
+                max: 'La capacidad parece demasiado alta, verifica el dato.'
+            },
+            precio_base: {
+                required: 'El precio es obligatorio.',
+                number: 'Ingresa un número válido (usa punto para decimales).',
+                min: 'Debe ser mayor a cero.',
+                max: 'El precio parece demasiado alto, verifica el dato.'
+            },
+            descripcion: {
+                maxlength: 'La descripción no puede superar los 1000 caracteres.'
+            }
+        },
+        submitHandler: function(form) {
+            form.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

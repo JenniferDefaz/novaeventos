@@ -1,0 +1,50 @@
+{% extends './plantillaPrin.html' %}
+{% load static %}
+
+{% block contenido %}
+
+<!-- Home -->
+<div class="home">
+	<div class="parallax_background parallax-window" data-parallax="scroll" data-image-src="{% static 'images/prin2.png' %}" data-speed="0.8"></div>
+	<div class="home_container">
+		<div class="container">
+			<div class="row">
+				<div class="col">
+					<div class="home_content text-center">
+						<div class="home_subtitle page_subtitle">The Venue es</div>
+						<div class="home_title"><h1>Una Experiencia Extraordinaria</h1></div>
+						<div class="home_text ml-auto mr-auto">
+							<p>Organiza bodas, conferencias, graduaciones y toda clase de eventos en nuestros salones, con servicio de catering y equipos audiovisuales incluidos.</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="scroll_icon"></div>
+</div>
+
+<div class="intro">
+	<div class="container">
+		<div class="row">
+			<div class="col">
+				<div class="intro_content">
+					<div class="intro_subtitle page_subtitle">Algo nuevo</div>
+					<div class="intro_title"><h2>Tu Evento, Nuestra Pasión</h2></div>
+					<div class="intro_text">
+						<p>Contamos con salones de distintas capacidades, servicio de catering personalizado y equipos audiovisuales de primera para que tu evento sea inolvidable. Solicita tu cotización en línea y organiza todo desde la comodidad de tu casa.</p>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xl-4 col-md-6 intro_col">
+						<div class="intro_image"><img src="{% static 'images/intro_1.jpg' %}" alt="Salón de eventos"></div>
+					</div>
+					<div class="col-xl-4 col-md-6 intro_col">
+						<div class="intro_image"><img src="{% static 'images/intro_2.jpg' %}" alt="Banquete"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

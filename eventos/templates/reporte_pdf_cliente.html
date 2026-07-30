@@ -1,0 +1,197 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi Reporte — NovaEventos</title>
+    <style>
+        @page { size: A4; margin: 2cm; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #2a2929;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .reporte-header {
+            text-align: center;
+            border-bottom: 3px solid #D4AF37;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .reporte-header h1 { margin: 0; font-size: 24px; color: #2a2929; }
+        .reporte-header p  { margin: 4px 0 0; color: #888; font-size: 13px; }
+
+        .resumen-cards {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .resumen-card {
+            flex: 1;
+            min-width: 120px;
+            border: 1.5px solid #eee;
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+        }
+        .resumen-card .valor  { font-size: 22px; font-weight: 700; color: #0B3C5D; }
+        .resumen-card .etiqueta { font-size: 11px; color: #888; margin-top: 4px; }
+
+        h2 {
+            font-size: 16px;
+            border-left: 4px solid #D4AF37;
+            padding-left: 10px;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        th, td { border: 1px solid #ddd; padding: 7px 10px; font-size: 12px; text-align: left; }
+        th { background: #0B3C5D; color: #fff; }
+        tr:nth-child(even) { background: #f8f8f8; }
+
+        .badge-pendiente  { background:#FFC107; color:#2a2929; padding:2px 8px; border-radius:10px; font-size:11px; }
+        .badge-aprobada   { background:#28a745; color:#fff;    padding:2px 8px; border-radius:10px; font-size:11px; }
+        .badge-rechazada  { background:#dc3545; color:#fff;    padding:2px 8px; border-radius:10px; font-size:11px; }
+
+        .total-row td { font-weight: 700; background: #fdf6e3; }
+
+        .botones-accion { text-align: center; margin-bottom: 28px; }
+        .btn-imprimir {
+            background: #0B3C5D; color: #fff;
+            border: none; border-radius: 8px;
+            padding: 11px 26px; font-size: 14px;
+            font-weight: 600; cursor: pointer;
+        }
+        .btn-imprimir:hover { background: #D4AF37; color: #2a2929; }
+
+        .footer-reporte {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        @media print {
+            .botones-accion { display: none; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="botones-accion">
+    <button class="btn-imprimir" onclick="window.print()">
+        🖨️ Imprimir / Guardar como PDF
+    </button>
+</div>
+
+<div class="reporte-header">
+    <h1>NovaEventos — Mi Historial de Eventos</h1>
+    <p>
+        Cliente: <b>{{ cliente_nombre }}</b>
+        &nbsp;|&nbsp;
+        Generado el {{ fecha_generacion|date:"d/m/Y H:i" }}
+    </p>
+</div>
+
+<!-- Tarjetas resumen -->
+<div class="resumen-cards">
+    <div class="resumen-card">
+        <div class="valor">{{ total_aprobadas }}</div>
+        <div class="etiqueta">Eventos aprobados</div>
+    </div>
+    <div class="resumen-card">
+        <div class="valor">{{ total_pendientes }}</div>
+        <div class="etiqueta">Pendientes</div>
+    </div>
+    <div class="resumen-card">
+        <div class="valor">{{ total_rechazadas }}</div>
+        <div class="etiqueta">Rechazadas</div>
+    </div>
+    <div class="resumen-card">
+        <div class="valor">${{ gasto_total|floatformat:2 }}</div>
+        <div class="etiqueta">Total invertido</div>
+    </div>
+</div>
+
+<!-- Historial completo de cotizaciones -->
+<h2>1. Historial de Cotizaciones</h2>
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Salón</th>
+            <th>Fecha evento</th>
+            <th>Invitados</th>
+            <th>Estado</th>
+            <th>Precio ($)</th>
+            <th>Solicitada</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in cotizaciones %}
+        <tr>
+            <td>{{ c.id }}</td>
+            <td>{{ c.salon_solicitado.nombre }}</td>
+            <td>{{ c.fecha_evento_tentativa|date:"d/m/Y" }}</td>
+            <td>{{ c.numero_invitados }}</td>
+            <td>
+                {% if c.estado == 'PENDIENTE' %}
+                    <span class="badge-pendiente">Pendiente</span>
+                {% elif c.estado == 'APROBADA' %}
+                    <span class="badge-aprobada">Aprobada</span>
+                {% else %}
+                    <span class="badge-rechazada">Rechazada</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if c.precio_total_estimado %}
+                    ${{ c.precio_total_estimado|floatformat:2 }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            <td>{{ c.fecha_solicitud|date:"d/m/Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">Aún no tienes cotizaciones registradas.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Gasto por mes (últimos 12 meses) -->
+<h2>2. Gasto Mensual — Últimos 12 Meses</h2>
+<table>
+    <thead>
+        <tr><th>Mes</th><th>Total invertido ($)</th></tr>
+    </thead>
+    <tbody>
+        {% for m in gasto_por_mes_tabla %}
+        <tr>
+            <td>{{ m.nombre }}</td>
+            <td>
+                {% if m.total %}
+                    ${{ m.total|floatformat:2 }}
+                {% else %}
+                    $0.00
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+            <td>Total acumulado</td>
+            <td>${{ gasto_total|floatformat:2 }}</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="footer-reporte">
+    NovaEventos © {{ fecha_generacion|date:"Y" }} — Reporte personal generado automáticamente
+</div>
+
+</body>
+</html>

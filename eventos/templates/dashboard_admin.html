@@ -1,0 +1,177 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container" style="padding-top: 40px;">
+<div class="d-flex justify-content-between align-items-center flex-wrap">
+    <h1><b>Dashboard y Reportes</b></h1>
+    <form method="get" class="d-flex align-items-center">
+        <label class="me-2 mb-0"><b>Año:</b></label>
+        <select name="anio" class="form-control" style="width:auto;" onchange="this.form.submit()">
+            {% for a in anios_disponibles %}
+                <option value="{{ a }}" {% if a == anio_seleccionado %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+        </select>
+        <a href="{% url 'reporte_pdf' %}?anio={{ anio_seleccionado }}" target="_blank" class="btn btn-outline-dark ms-2">
+    <i class="fa fa-file-pdf-o"></i> Ver Reporte Imprimible
+</a>
+    </form>
+</div>
+<hr>
+
+<!-- Tarjetas de resumen -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <i class="fa fa-dollar"></i>
+            <div>
+                <div class="dashboard-card-value">${{ ingreso_total_anio|floatformat:2 }}</div>
+                <div class="dashboard-card-label">Ingresos proyectados {{ anio_seleccionado }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="dashboard-card">
+            <i class="fa fa-calendar-check-o"></i>
+            <div>
+                <div class="dashboard-card-value">{{ total_eventos_anio }}</div>
+                <div class="dashboard-card-label">Eventos confirmados {{ anio_seleccionado }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico 1: Ingresos por trimestre -->
+<div class="report-box">
+    <h4>Ingresos Proyectados por Trimestre — {{ anio_seleccionado }}</h4>
+    <canvas id="chart_trimestres" height="90"></canvas>
+</div>
+
+<!-- Gráfico 2: Salones más rentables -->
+<div class="report-box">
+    <h4>Salones Más Rentables (histórico)</h4>
+    {% if nombres_salones %}
+        <canvas id="chart_salones" height="100"></canvas>
+    {% else %}
+        <p class="text-muted">Aún no hay eventos confirmados para generar este reporte.</p>
+    {% endif %}
+</div>
+
+<!-- Gráfico 3: Densidad de eventos por mes -->
+<div class="report-box">
+    <h4>Densidad de Eventos por Mes — {{ anio_seleccionado }}</h4>
+    <canvas id="chart_meses" height="90"></canvas>
+</div>
+
+<br>
+</div>
+
+<style>
+.dashboard-card{
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 3px 15px rgba(0,0,0,.08);
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+.dashboard-card i{
+    font-size: 34px;
+    color: #D4AF37;
+}
+.dashboard-card-value{
+    font-size: 26px;
+    font-weight: 700;
+    color: #2a2929;
+}
+.dashboard-card-label{
+    font-size: 13px;
+    color: #888;
+}
+.report-box{
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 3px 15px rgba(0,0,0,.08);
+    padding: 24px;
+    margin-bottom: 28px;
+}
+.report-box h4{
+    font-weight: 600;
+    color: #2a2929;
+    margin-bottom: 20px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // ---------- Gráfico 1: Ingresos por trimestre ----------
+    new Chart(document.getElementById('chart_trimestres'), {
+        type: 'bar',
+        data: {
+            labels: ['Q1 (Ene-Mar)', 'Q2 (Abr-Jun)', 'Q3 (Jul-Sep)', 'Q4 (Oct-Dic)'],
+            datasets: [{
+                label: 'Ingresos proyectados ($)',
+                data: {{ ingresos_por_trimestre|safe }},
+                backgroundColor: '#0B3C5D',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // ---------- Gráfico 2: Salones más rentables ----------
+    const nombresSalones = {{ nombres_salones|safe }};
+    const ingresosSalones = {{ ingresos_salones|safe }};
+
+    if (nombresSalones.length > 0) {
+        new Chart(document.getElementById('chart_salones'), {
+            type: 'bar',
+            data: {
+                labels: nombresSalones,
+                datasets: [{
+                    label: 'Ingresos totales ($)',
+                    data: ingresosSalones,
+                    backgroundColor: '#D4AF37',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true } }
+            }
+        });
+    }
+
+    // ---------- Gráfico 3: Densidad de eventos por mes ----------
+    new Chart(document.getElementById('chart_meses'), {
+        type: 'line',
+        data: {
+            labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+            datasets: [{
+                label: 'Cantidad de eventos',
+                data: {{ eventos_por_mes|safe }},
+                borderColor: '#2a2929',
+                backgroundColor: 'rgba(212,175,55,0.2)',
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#D4AF37'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+
+});
+</script>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container">
+<div class="row">
+<div class="col-md-3"></div>
+<div class="col-md-6">
+<br>
+<h1><b>Revisar Cotización</b></h1>
+<hr>
+
+<div class="alert alert-info">
+    <b>Atajos de teclado:</b>
+    
+    <kbd>Ctrl</kbd>+<kbd>A</kbd> Aprobar &nbsp;|&nbsp;
+    <kbd>Ctrl</kbd>+<kbd>R</kbd> Rechazar
+</div>
+
+<div class="card mb-3">
+<div class="card-body">
+<p><b>Cliente:</b> {{ cotizacion.cliente.user.get_full_name }}</p>
+<p><b>Salón:</b> {{ cotizacion.salon_solicitado.nombre }}</p>
+
+<p><b>Fecha:</b> {{ cotizacion.fecha_evento_tentativa|date:"d/m/Y" }} de {{ cotizacion.hora_inicio_tentativa }} a {{ cotizacion.hora_fin_tentativa }}</p>
+<p><b>Invitados:</b> {{ cotizacion.numero_invitados }}</p>
+
+{% if cotizacion.incluye_catering %}
+<p><b>Catering:</b></p>
+<ul>
+    {% for item in cotizacion.catering_seleccionado.all %}
+        <li>{{ item.proveedor.nombre_empresa }} (${{ item.proveedor.precio_por_persona }}/persona)</li>
+    {% empty %}
+        <li class="text-muted">No especificado</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{% if cotizacion.incluye_audiovisuales %}
+<p><b>Equipos solicitados:</b></p>
+<ul>
+    {% for item in cotizacion.equipos_seleccionados.all %}
+        <li>{{ item.equipo.nombre }} x{{ item.cantidad }} (${{ item.equipo.precio_unitario }} c/u)</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<p><b>Precio total calculado por el sistema:</b>
+   <span class="badge bg-success fs-6">${{ cotizacion.precio_sugerido|default:"0.00" }}</span>
+   <small class="text-muted ms-2">(no editable)</small>
+</p>
+</div>
+</div>
+
+<form id="form_revisar" method="post">
+    {% csrf_token %}
+    <b>Comentario (opcional):</b>
+    <textarea class="form-control" name="comentario_admin">{{ cotizacion.comentario_admin }}</textarea>
+    <br>
+    
+</form>
+<br>
+
+<div class="d-flex gap-2">
+    <a href="#" id="btn_aprobar" class="btn btn-success btn-aprobar" data-url="{% url 'aprobar_cotizacion' cotizacion.id %}">Aprobar cotización</a>
+    <a href="#" id="btn_rechazar" class="btn btn-danger btn-rechazar" data-url="{% url 'rechazar_cotizacion' cotizacion.id %}">Rechazar cotización</a>
+</div>
+<br>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Ya no hay campo de precio editable; la validación del form solo cubre el comentario.
+
+    $('.btn-aprobar').on('click', function(e) {
+        e.preventDefault();
+        const url = $(this).data('url');
+        Swal.fire({
+            title: '¿Aprobar esta cotización?',
+            text: 'Se creará el evento y se bloqueará el salón en esas fechas.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, aprobar'
+        }).then((result) => { if (result.isConfirmed) window.location.href = url; });
+    });
+
+    $('.btn-rechazar').on('click', function(e) {
+        e.preventDefault();
+        const url = $(this).data('url');
+        Swal.fire({
+            title: '¿Rechazar esta cotización?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, rechazar'
+        }).then((result) => { if (result.isConfirmed) window.location.href = url; });
+    });
+
+    // ---------- Atajos de teclado (Hotkeys-js) ----------
+
+    hotkeys('ctrl+g', function(event) {
+        event.preventDefault();
+        $('#btn_guardar_precio').click();
+    });
+
+    hotkeys('ctrl+a', function(event) {
+        event.preventDefault();
+        const $boton = $('#btn_aprobar');
+        if ($boton.length) {
+            $boton.click();
+        } else {
+            Swal.fire('Atención', 'No se puede aprobar en este momento.', 'warning');
+        }
+    });
+
+    hotkeys('ctrl+r', function(event) {
+        event.preventDefault();
+        const $boton = $('#btn_rechazar');
+        if ($boton.length) {
+            $boton.click();
+        } else {
+            Swal.fire('Atención', 'No se puede rechazar en este momento.', 'warning');
+        }
+    });
+});
+</script>
+{% endblock %}

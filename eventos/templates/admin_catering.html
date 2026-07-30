@@ -1,0 +1,69 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container" style="padding-top: 40px;">
+<div class="d-flex justify-content-between align-items-center flex-wrap">
+    <h1><b>Proveedores de Catering</b></h1>
+    <a href="{% url 'crear_catering' %}" class="btn btn-success">
+        <i class="fa fa-plus"></i> Nuevo Proveedor
+    </a>
+</div>
+<hr>
+
+<table id="tabla_catering" class="table table-striped" style="width:100%">
+<thead>
+<tr>
+<th>Empresa</th><th>Contacto</th><th>Teléfono</th><th>Especialidad</th><th>Precio/persona</th><th>Estado</th><th>Acciones</th>
+</tr>
+</thead>
+<tbody>
+{% for prov in proveedores %}
+<tr>
+<td>{{ prov.nombre_empresa }}</td>
+<td>{{ prov.contacto }}</td>
+<td>{{ prov.telefono }}</td>
+<td>{{ prov.especialidad }}</td>
+<td>${{ prov.precio_por_persona }}</td>
+<td>
+    {% if prov.activo %}<span class="badge badge-success">Activo</span>
+    {% else %}<span class="badge badge-secondary">Inactivo</span>{% endif %}
+</td>
+<td>
+<a href="{% url 'editar_catering' prov.id %}" class="btn btn-outline-warning btn-sm">Editar</a>
+<a href="#" class="btn btn-danger btn-sm btn-eliminar" data-url="{% url 'eliminar_catering' prov.id %}" data-nombre="{{ prov.nombre_empresa }}">Eliminar</a>
+</td>
+</tr>
+{% empty %}
+<tr><td colspan="7">No hay proveedores registrados.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<br><br><br>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    {% if proveedores %}
+    $('#tabla_catering').DataTable({
+        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' }
+    });
+    {% endif %}
+
+    $(document).on('click', '.btn-eliminar', function(e) {
+        e.preventDefault();
+        const url = $(this).data('url');
+        const nombre = $(this).data('nombre');
+        Swal.fire({
+            title: `¿Eliminar "${nombre}"?`,
+            text: 'Esta acción no se puede deshacer.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => { if (result.isConfirmed) window.location.href = url; });
+    });
+});
+</script>
+{% endblock %}

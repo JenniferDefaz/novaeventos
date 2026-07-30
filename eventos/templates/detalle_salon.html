@@ -1,0 +1,14 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container">
+<br>
+<h1><b>{{ salon.nombre }}</b></h1>
+<p><b>Capacidad:</b> {{ salon.capacidad }} personas</p>
+<p><b>Precio base:</b> ${{ salon.precio_base }}</p>
+<p>{{ salon.descripcion }}</p>
+<br>
+<a href="{% url 'solicitar_cotizacion' salon.id %}" class="btn btn-success">Solicitar cotización</a>
+<a href="{% url 'catalogo_salones' %}" class="btn btn-secondary">Volver</a>
+</div>
+<br><br><br>
+{% endblock %}

@@ -1,0 +1,235 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="container" style="padding-top: 40px;">
+
+<div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+    <h1><b>Mi Dashboard</b></h1>
+    <a href="{% url 'reporte_pdf_cliente' %}" target="_blank" class="btn btn-outline-dark">
+        <i class="fa fa-file-pdf-o"></i> Ver Reporte Imprimible
+    </a>
+</div>
+<hr>
+
+<!-- ===== TARJETAS DE RESUMEN ===== -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="dashboard-card">
+            <i class="fa fa-list-alt" style="color:#0B3C5D;"></i>
+            <div>
+                <div class="dashboard-card-value">{{ total_cotizaciones }}</div>
+                <div class="dashboard-card-label">Total de cotizaciones</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="dashboard-card">
+            <i class="fa fa-check-circle" style="color:#28a745;"></i>
+            <div>
+                <div class="dashboard-card-value">{{ aprobadas }}</div>
+                <div class="dashboard-card-label">Cotizaciones aprobadas</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="dashboard-card">
+            <i class="fa fa-dollar" style="color:#D4AF37;"></i>
+            <div>
+                <div class="dashboard-card-value">${{ gasto_total|floatformat:2 }}</div>
+                <div class="dashboard-card-label">Total invertido en eventos</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="dashboard-card">
+            <i class="fa fa-clock-o" style="color:#FFC107;"></i>
+            <div>
+                <div class="dashboard-card-value">{{ pendientes }}</div>
+                <div class="dashboard-card-label">Cotizaciones pendientes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="dashboard-card">
+            <i class="fa fa-times-circle" style="color:#dc3545;"></i>
+            <div>
+                <div class="dashboard-card-value">{{ rechazadas }}</div>
+                <div class="dashboard-card-label">Cotizaciones rechazadas</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="dashboard-card">
+            <i class="fa fa-calendar" style="color:#c9a898;"></i>
+            <div>
+                {% if proximo_evento %}
+                    <div class="dashboard-card-value" style="font-size:1.1rem;">
+                        {{ proximo_evento.fecha_evento_inicio|date:"d/m/Y" }}
+                    </div>
+                    <div class="dashboard-card-label">
+                        Próximo evento — {{ proximo_evento.salon.nombre }}
+                    </div>
+                {% else %}
+                    <div class="dashboard-card-value" style="font-size:1.1rem; color:#aaa;">—</div>
+                    <div class="dashboard-card-label">Sin eventos próximos</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== GRÁFICOS ===== -->
+<div class="row">
+    <!-- Gráfico 1: torta de estados -->
+    <div class="col-md-4 mb-4">
+        <div class="report-box h-100 d-flex flex-column">
+            <h4>Estado de mis cotizaciones</h4>
+            {% if total_cotizaciones %}
+                <div class="d-flex justify-content-center align-items-center flex-grow-1">
+                    <canvas id="chart_estados" style="max-height:240px;"></canvas>
+                </div>
+            {% else %}
+                <p class="text-muted mt-3">Aún no tienes cotizaciones registradas.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Gráfico 2: gasto por mes -->
+    <div class="col-md-8 mb-4">
+        <div class="report-box">
+            <h4>Gasto en eventos — últimos 12 meses</h4>
+            <canvas id="chart_gasto" height="110"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico 3: cotizaciones por mes -->
+<div class="report-box mb-4">
+    <h4>Cotizaciones enviadas — últimos 12 meses</h4>
+    <canvas id="chart_cotizaciones" height="80"></canvas>
+</div>
+
+<br>
+</div>
+
+<style>
+.dashboard-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 3px 15px rgba(0,0,0,.08);
+    padding: 22px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 100%;
+}
+.dashboard-card i {
+    font-size: 32px;
+}
+.dashboard-card-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2a2929;
+    line-height: 1.2;
+}
+.dashboard-card-label {
+    font-size: 12px;
+    color: #888;
+    margin-top: 3px;
+}
+.report-box {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 3px 15px rgba(0,0,0,.08);
+    padding: 24px;
+    margin-bottom: 0;
+}
+.report-box h4 {
+    font-weight: 600;
+    color: #2a2929;
+    margin-bottom: 18px;
+    font-size: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    const estadosData      = {{ estados_data|safe }};
+    const mesesLabels      = {{ meses_labels|safe }};
+    const gastoPorMes      = {{ gasto_por_mes|safe }};
+    const cotizPorMes      = {{ cotizaciones_por_mes|safe }};
+
+    // ---- Gráfico 1: torta de estados ----
+    const totalCotiz = estadosData.reduce((a, b) => a + b, 0);
+    if (totalCotiz > 0) {
+        new Chart(document.getElementById('chart_estados'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Pendientes', 'Aprobadas', 'Rechazadas'],
+                datasets: [{
+                    data: estadosData,
+                    backgroundColor: ['#FFC107', '#28a745', '#dc3545'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 12 } } }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+
+    // ---- Gráfico 2: gasto por mes ----
+    new Chart(document.getElementById('chart_gasto'), {
+        type: 'bar',
+        data: {
+            labels: mesesLabels,
+            datasets: [{
+                label: 'Gasto ($)',
+                data: gastoPorMes,
+                backgroundColor: '#0B3C5D',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // ---- Gráfico 3: cotizaciones por mes ----
+    new Chart(document.getElementById('chart_cotizaciones'), {
+        type: 'line',
+        data: {
+            labels: mesesLabels,
+            datasets: [{
+                label: 'Cotizaciones enviadas',
+                data: cotizPorMes,
+                borderColor: '#2a2929',
+                backgroundColor: 'rgba(212,175,55,0.15)',
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#D4AF37',
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+
+});
+</script>
+{% endblock %}

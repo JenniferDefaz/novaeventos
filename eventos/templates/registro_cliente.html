@@ -1,0 +1,181 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+<div class="auth-page">
+<div class="container">
+<div class="row justify-content-center">
+<div class="col-md-6">
+
+<div class="auth-card">
+    <div class="auth-card-header">
+        <i class="fa fa-user-plus"></i>
+        <h3>Crear Cuenta</h3>
+        <p>Regístrate para solicitar cotizaciones de eventos</p>
+    </div>
+
+    {% if error %}
+    <div class="auth-error">
+        <i class="fa fa-exclamation-triangle"></i> {{ error }}
+    </div>
+    {% endif %}
+
+    <form id="form_registro" method="post">
+        {% csrf_token %}
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="auth-field">
+                    <label>Nombre</label>
+                    <input class="auth-input" type="text" name="nombre" placeholder="Ej: María">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="auth-field">
+                    <label>Apellido</label>
+                    <input class="auth-input" type="text" name="apellido" placeholder="Ej: Defaz">
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="auth-field">
+                    <label>Cédula</label>
+                    <input class="auth-input" type="text" name="cedula" maxlength="10" inputmode="numeric" placeholder="10 dígitos">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="auth-field">
+                    <label>Teléfono</label>
+                    <input class="auth-input" type="text" name="telefono" maxlength="10" inputmode="numeric" placeholder="0991234567">
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-field">
+            <label>Correo electrónico</label>
+            <input class="auth-input" type="email" name="email" placeholder="tu@correo.com">
+        </div>
+
+        <div class="auth-field">
+            <label>Contraseña</label>
+            <input class="auth-input" type="password" name="password" placeholder="Mínimo 6 caracteres">
+        </div>
+
+        <button class="auth-button" type="submit">Registrarme</button>
+    </form>
+
+    <div class="auth-divider"><span>o</span></div>
+
+    <p class="auth-footer-text">
+        ¿Ya tienes cuenta? <a href="{% url 'iniciar_sesion' %}">Inicia sesión aquí</a>
+    </p>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<style>
+.auth-page{ padding: 60px 0 100px; min-height: 60vh; }
+.auth-card{ background: #fff; border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.12); padding: 40px 36px; }
+.auth-card-header{ text-align: center; margin-bottom: 28px; }
+.auth-card-header i{ font-size: 40px; color: #D4AF37; margin-bottom: 10px; }
+.auth-card-header h3{ font-weight: 700; color: #2a2929; margin: 8px 0 4px; }
+.auth-card-header p{ color: #8a8a8a; font-size: 14px; margin: 0; }
+.auth-error{ background: #fdecea; color: #c0392b; border-radius: 8px; padding: 10px 14px; font-size: 14px; margin-bottom: 18px; }
+.auth-field{ margin-bottom: 18px; }
+.auth-field label{ display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+.auth-input{ width: 100%; border: 1.5px solid #e2e2e2; border-radius: 10px; padding: 12px 14px; font-size: 15px; transition: border-color .2s; background: #fff; }
+.auth-input:focus{ outline: none; border-color: #D4AF37; box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
+.auth-input:-webkit-autofill{ -webkit-box-shadow: 0 0 0 1000px #fff inset; -webkit-text-fill-color: #333; }
+.auth-input.error{ border-color: #dc3545; }
+.auth-button{ width: 100%; background: #2a2929; color: #fff !important; border: none; border-radius: 10px; padding: 13px; font-weight: 700; font-size: 15px; letter-spacing: .5px; transition: background .2s; margin-top: 6px; }
+.auth-button:hover{ background: #D4AF37; color: #2a2929 !important; }
+.auth-divider{ text-align: center; border-top: 1px solid #eee; margin: 26px 0 18px; position: relative; }
+.auth-divider span{ background: #fff; padding: 0 12px; color: #aaa; font-size: 13px; position: relative; top: -11px; }
+.auth-footer-text{ text-align: center; color: #666; font-size: 14px; margin: 0; }
+.auth-footer-text a{ color: #D4AF37; font-weight: 600; text-decoration: none; }
+.auth-footer-text a:hover{ text-decoration: underline; }
+
+/* Mensajes de error en rojo debajo de cada campo */
+label.error{
+    color: #dc3545 !important;
+    font-size: 13px;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    display: block;
+    margin-top: -12px;
+    margin-bottom: 14px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+
+    $.validator.addMethod("soloLetras", function(value, element) {
+        return this.optional(element) || /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(value);
+    }, "Solo se permiten letras");
+
+    $.validator.addMethod("telefonoEcuador", function(value, element) {
+        return this.optional(element) || /^[0-9]{10}$/.test(value);
+    }, "El teléfono debe tener exactamente 10 dígitos");
+
+    // Validación real del algoritmo de cédula ecuatoriana
+    $.validator.addMethod("cedulaEcuador", function(value, element) {
+        if (!/^[0-9]{10}$/.test(value)) return false;
+
+        const provincia = parseInt(value.substring(0, 2), 10);
+        if (provincia < 1 || provincia > 24) return false;
+
+        const tercerDigito = parseInt(value.charAt(2), 10);
+        if (tercerDigito >= 6) return false;
+
+        const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+        let suma = 0;
+        for (let i = 0; i < 9; i++) {
+            let valor = parseInt(value.charAt(i), 10) * coeficientes[i];
+            if (valor >= 10) valor -= 9;
+            suma += valor;
+        }
+
+        const digitoVerificador = parseInt(value.charAt(9), 10);
+        const resultado = (10 - (suma % 10)) % 10;
+
+        return resultado === digitoVerificador;
+    }, "La cédula ingresada no es válida");
+
+    $("#form_registro").validate({
+        errorElement: 'label',
+        errorPlacement: function(error, element) {
+            error.insertAfter(element);
+        },
+        highlight: function(element) {
+            $(element).addClass('error');
+        },
+        unhighlight: function(element) {
+            $(element).removeClass('error');
+        },
+        rules: {
+            nombre: { required: true, soloLetras: true, minlength: 2 },
+            apellido: { required: true, soloLetras: true, minlength: 2 },
+            cedula: { required: true, cedulaEcuador: true },
+            email: { required: true, email: true },
+            telefono: { required: true, telefonoEcuador: true },
+            password: { required: true, minlength: 6 }
+        },
+        messages: {
+            nombre: { required: "Ingresa tu nombre" },
+            apellido: { required: "Ingresa tu apellido" },
+            cedula: { required: "Ingresa tu número de cédula" },
+            email: { required: "Ingresa tu correo electrónico", email: "Ingresa un correo válido" },
+            telefono: { required: "Ingresa tu número de teléfono" },
+            password: { required: "Ingresa una contraseña", minlength: "Mínimo 6 caracteres" }
+        }
+    });
+});
+</script>
+{% endblock %}

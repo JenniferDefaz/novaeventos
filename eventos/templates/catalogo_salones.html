@@ -1,0 +1,177 @@
+{% extends "./plantillaPrin.html" %}
+{% block contenido %}
+
+<div class="container">
+    <br>
+    <h1><b>🏛️ Salones Disponibles</b></h1>
+    <hr>
+
+    <div class="row">
+        {% for salon in salones %}
+        <div class="col-md-4 col-sm-6 mb-4">
+            <div class="card salon-card h-100 shadow-sm">
+                <!-- Contenedor de imagen -->
+                <div class="card-img-wrapper">
+                    {% if salon.imagen %}
+                        <a href="{{ salon.imagen.url }}" target="_blank" title="Ver imagen en grande">
+                            <img src="{{ salon.imagen.url }}" 
+                                 class="card-img-top salon-img" 
+                                 alt="{{ salon.nombre }}"
+                                 style="height: 200px; object-fit: cover; width: 100%; cursor: pointer;">
+                        </a>
+                    {% else %}
+                        <div class="salon-placeholder d-flex align-items-center justify-content-center" 
+                             style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i class="fas fa-building" style="font-size: 60px; color: rgba(255,255,255,0.3);"></i>
+                            <span class="text-white position-absolute" style="font-weight: 300; opacity: 0.8;">Sin imagen</span>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Badge de capacidad sobre la imagen -->
+                    <div class="capacity-badge">
+                        <i class="fas fa-users"></i> {{ salon.capacidad }}
+                    </div>
+                    
+                    <!-- Badge de precio sobre la imagen -->
+                    <div class="price-badge">
+                        ${{ salon.precio_base }}
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <h5 class="card-title font-weight-bold">{{ salon.nombre }}</h5>
+                    <p class="card-text text-muted">
+                        <i class="fas fa-people-arrows"></i> Capacidad: {{ salon.capacidad }} personas
+                    </p>
+                    {% if salon.descripcion %}
+                        <p class="card-text small text-muted salon-description">
+                            {{ salon.descripcion|truncatechars:60 }}
+                        </p>
+                    {% endif %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="price-text">
+                            <b class="text-success">${{ salon.precio_base }}</b> 
+                            <small class="text-muted">/ base</small>
+                        </span>
+                        <a href="{% url 'detalle_salon' salon.id %}" class="btn btn-primary btn-sm btn-detail">
+                            <i class="fas fa-eye"></i> Ver detalle
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-calendar-times" style="font-size: 60px; color: #ccc;"></i>
+            <h4 class="mt-3 text-muted">No hay salones disponibles en este momento</h4>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    /* Estilos para las tarjetas */
+    .salon-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .salon-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
+    }
+
+    .card-img-wrapper {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card-img-wrapper a {
+        display: block;
+        overflow: hidden;
+    }
+
+    .salon-img {
+        transition: transform 0.5s ease;
+    }
+
+    .salon-card:hover .salon-img {
+        transform: scale(1.05);
+    }
+
+    /* Badges */
+    .capacity-badge {
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        backdrop-filter: blur(4px);
+        pointer-events: none;
+    }
+
+    .price-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(255, 215, 0, 0.9);
+        color: #333;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 14px;
+        box-shadow: 0 2px 8px rgba(255,215,0,0.4);
+        pointer-events: none;
+    }
+
+    .salon-description {
+        min-height: 40px;
+        margin-bottom: 10px;
+    }
+
+    .btn-detail {
+        border-radius: 20px;
+        padding: 5px 16px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-detail:hover {
+        transform: scale(1.05);
+    }
+
+    .price-text {
+        font-size: 1.1rem;
+    }
+
+    /* Placeholder */
+    .salon-placeholder {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        position: relative;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .salon-card {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+    }
+</style>
+
+<!-- Agregar un pequeño indicador visual de que la imagen es clickeable -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Añadir tooltip para indicar que la imagen se abre en nueva pestaña
+    var imagenes = document.querySelectorAll('.card-img-wrapper a');
+    imagenes.forEach(function(img) {
+        img.setAttribute('title', 'Haz clic para ver la imagen en grande (se abre en nueva pestaña)');
+    });
+});
+</script>
+
+{% endblock %}
