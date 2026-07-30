@@ -38,8 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cloudinary',
-    'cloudinary_storage',
     'eventos',
 ]
 
@@ -112,23 +110,8 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # Media (subida de archivos)
-# En producción usa Cloudinary; en local usa el sistema de archivos normal.
-
-CLOUDINARY_URL = config('CLOUDINARY_URL', default='')
-
-if CLOUDINARY_URL:
-    import cloudinary
-    import cloudinary.uploader
-    import cloudinary.api
-
-    cloudinary.config(cloudinary_url=CLOUDINARY_URL)
-
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    MEDIA_URL = '/media/'
-else:
-    # Desarrollo local: guardar en carpeta media/
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # Correo (SMTP con Gmail)

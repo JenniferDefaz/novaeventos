@@ -23,12 +23,10 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('eventos.urls'))
-    
 ]
 
-#hABILITAND EL ACCESO A LOR ARCHIVOS SUBIDOS EN DESARROLLO 
-if settings.DEBUG:
-    urlpatterns+=static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+# Servir archivos media siempre (local y producción)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
 
