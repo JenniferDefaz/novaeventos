@@ -10,6 +10,9 @@ import io
 import os
 import threading
 
+import qrcode
+from PIL import Image as PilImage
+
 from django.core.mail import EmailMessage
 
 # ReportLab
@@ -18,9 +21,32 @@ from reportlab.lib.units import cm
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, Image
 )
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+
+
+# ============================================================
+# GENERACIÓN DE QR
+# ============================================================
+
+def _generar_qr_buffer(texto):
+    """
+    Genera un código QR con el texto dado y devuelve un BytesIO con la imagen PNG.
+    """
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=6,
+        border=2,
+    )
+    qr.add_data(texto)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color='black', back_color='white')
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return buf
 
 
 # ============================================================
@@ -188,6 +214,38 @@ def generar_pdf_factura(evento):
         f'Estado del evento: <b><font color="#008000">CONFIRMADO ✓</font></b>',
         ParagraphStyle('estado', parent=styles['Normal'], fontSize=11, spaceAfter=6)
     ))
+
+    # ---- Código QR ----
+    texto_qr = (
+        f"NovaEventos — Reserva Confirmada\n"
+        f"Cliente: {cliente.user.get_full_name()}\n"
+        f"Salón: {salon.nombre}\n"
+        f"Fecha: {evento.fecha_evento_inicio:%d/%m/%Y}\n"
+        f"Nro. EVT-{evento.id:05d}"
+    )
+    qr_buf = _generar_qr_buffer(texto_qr)
+    qr_img = Image(qr_buf, width=3.5 * cm, height=3.5 * cm)
+
+    tabla_qr = Table(
+        [[qr_img, Paragraph(
+            '<b>Escanea para verificar tu reserva</b><br/>'
+            f'<font color="#555555" size="9">Cliente: {cliente.user.get_full_name()}<br/>'
+            f'Salón: {salon.nombre}<br/>'
+            f'Fecha: {evento.fecha_evento_inicio:%d/%m/%Y}</font>',
+            ParagraphStyle('qr_texto', parent=styles['Normal'], fontSize=10, leading=14)
+        )]],
+        colWidths=[4 * cm, 12 * cm]
+    )
+    tabla_qr.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#D4AF37')),
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fffdf5')),
+    ]))
+    elementos.append(Spacer(1, 0.4 * cm))
+    elementos.append(tabla_qr)
 
     # ---- Pie de página ----
     elementos.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#dddddd'), spaceBefore=16, spaceAfter=6))
