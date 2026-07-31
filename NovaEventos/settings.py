@@ -114,13 +114,8 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-# Correo — Brevo (ex Sendinblue) SMTP
-# Funciona en Railway sin restricciones de destinatarios, 300 correos/día gratis.
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp-relay.brevo.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
-EMAIL_HOST_USER = config('BREVO_SMTP_USER', default='jennifer.defaz3511@utc.edu.ec')
-EMAIL_HOST_PASSWORD = config('BREVO_SMTP_KEY', default='')
+# Correo — Brevo API HTTP (Railway bloquea todos los puertos SMTP)
+# Se usa requests para llamar la API directamente vía HTTPS.
+EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'  # Django no envía, lo hace utils.py
+BREVO_API_KEY = config('BREVO_API_KEY', default='')
 DEFAULT_FROM_EMAIL = 'NovaEventos <jennifer.defaz3511@utc.edu.ec>'

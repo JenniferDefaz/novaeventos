@@ -261,14 +261,59 @@ def generar_pdf_factura(evento):
 
 
 # ============================================================
-# ENVÍO DE CORREO — CORREO DE APROBACIÓN (con PDF adjunto)
+# ENVÍO DE CORREO VÍA BREVO API HTTP
+# (Railway bloquea SMTP; usamos HTTPS que siempre está abierto)
 # ============================================================
+
+def _enviar_via_brevo(destinatario_email, destinatario_nombre, asunto, cuerpo_texto, adjunto_pdf=None, nombre_pdf=None):
+    """
+    Envía un correo usando la API HTTP de Brevo (no SMTP).
+    Funciona en Railway y cualquier plataforma cloud.
+    """
+    import requests
+    from django.conf import settings
+
+    api_key = settings.BREVO_API_KEY
+    if not api_key:
+        print('❌ BREVO_API_KEY no configurada')
+        return False
+
+    payload = {
+        'sender': {
+            'name': 'NovaEventos',
+            'email': 'jennifer.defaz3511@utc.edu.ec',
+        },
+        'to': [{'email': destinatario_email, 'name': destinatario_nombre}],
+        'subject': asunto,
+        'textContent': cuerpo_texto,
+    }
+
+    if adjunto_pdf and nombre_pdf:
+        import base64
+        pdf_b64 = base64.b64encode(adjunto_pdf).decode('utf-8')
+        payload['attachment'] = [{'content': pdf_b64, 'name': nombre_pdf}]
+
+    response = requests.post(
+        'https://api.brevo.com/v3/smtp/email',
+        json=payload,
+        headers={
+            'api-key': api_key,
+            'Content-Type': 'application/json',
+        },
+        timeout=30,
+    )
+
+    if response.status_code in (200, 201):
+        print(f'✅ Correo enviado a {destinatario_email} vía Brevo API')
+        return True
+    else:
+        print(f'❌ Brevo API error {response.status_code}: {response.text}')
+        return False
 
 def _enviar_correo_aprobada(evento):
     """Función interna que se ejecuta en un hilo separado."""
     try:
         cliente = evento.cotizacion_origen.cliente
-        email_destino = cliente.user.email
         nombre = cliente.user.get_full_name()
 
         asunto = f'✅ Tu evento en NovaEventos fue APROBADO — {evento.salon.nombre}'
@@ -282,21 +327,23 @@ def _enviar_correo_aprobada(evento):
             f'🍽️ Catering incluido: {"Sí" if evento.cotizacion_origen.incluye_catering else "No"}\n'
             f'🎤 Audiovisuales incluidos: {"Sí" if evento.cotizacion_origen.incluye_audiovisuales else "No"}\n'
             f'💰 Precio final: ${evento.precio_final:,.2f}\n\n'
-            f'Adjuntamos tu factura proforma. Pronto un coordinador se pondrá en contacto contigo.\n\n'
+            f'Adjuntamos tu factura proforma con código QR de verificación.\n'
+            f'Pronto un coordinador se pondrá en contacto contigo.\n\n'
             f'¡Gracias por confiar en NovaEventos!\n\n'
             f'— El equipo de NovaEventos'
         )
 
-        correo = EmailMessage(asunto, cuerpo, to=[email_destino])
         pdf_buffer = generar_pdf_factura(evento)
-        correo.attach(
-            filename=f'Factura_NovaEventos_EVT-{evento.id:05d}.pdf',
-            content=pdf_buffer.read(),
-            mimetype='application/pdf'
-        )
-        correo.send(fail_silently=False)
-        print(f'✅ Correo de aprobación enviado a {email_destino}')
+        pdf_bytes = pdf_buffer.read()
 
+        _enviar_via_brevo(
+            destinatario_email=cliente.user.email,
+            destinatario_nombre=nombre,
+            asunto=asunto,
+            cuerpo_texto=cuerpo,
+            adjunto_pdf=pdf_bytes,
+            nombre_pdf=f'Factura_NovaEventos_EVT-{evento.id:05d}.pdf',
+        )
     except Exception as e:
         print(f'❌ Error enviando correo de aprobación: {e}')
 
@@ -314,10 +361,9 @@ def enviar_correo_aprobada_async(evento):
 def _enviar_correo_rechazada(cotizacion):
     """Función interna que se ejecuta en un hilo separado."""
     try:
-        email_destino = cotizacion.cliente.user.email
         nombre = cotizacion.cliente.user.get_full_name()
 
-        asunto = f'Tu solicitud de cotización en NovaEventos — Resultado'
+        asunto = 'Tu solicitud de cotización en NovaEventos — Resultado'
         cuerpo = (
             f'Hola {nombre},\n\n'
             f'Hemos revisado tu solicitud de cotización para el salón '
@@ -335,9 +381,12 @@ def _enviar_correo_rechazada(cotizacion):
             f'— El equipo de NovaEventos'
         )
 
-        correo = EmailMessage(asunto, cuerpo, to=[email_destino])
-        correo.send(fail_silently=False)
-        print(f'✅ Correo de rechazo enviado a {email_destino}')
+        _enviar_via_brevo(
+            destinatario_email=cotizacion.cliente.user.email,
+            destinatario_nombre=nombre,
+            asunto=asunto,
+            cuerpo_texto=cuerpo,
+        )
     except Exception as e:
         print(f'❌ Error enviando correo de rechazo: {e}')
 
