@@ -71,6 +71,23 @@ $(document).ready(function() {
         columnDefs: [{ orderable: false, targets: [7] }]
     });
     {% endif %}
+
+    $(document).on('click', '.btn-eliminar-cotizacion', function(e) {
+        e.preventDefault();
+        const url = $(this).data('url');
+        const cliente = $(this).data('cliente');
+        Swal.fire({
+            title: '¿Eliminar cotización?',
+            text: `Se eliminará la cotización de "${cliente}". Esta acción no se puede deshacer.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) window.location.href = url;
+        });
+    });
 });
 </script>
 {% endblock %}
