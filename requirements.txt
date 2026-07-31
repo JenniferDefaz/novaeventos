@@ -2,7 +2,6 @@ asgiref==3.12.1
 charset-normalizer==3.4.9
 dj-database-url==3.1.2
 Django==6.0.7
-django-anymail==10.3
 gunicorn==26.0.0
 packaging==26.2
 pillow==12.3.0

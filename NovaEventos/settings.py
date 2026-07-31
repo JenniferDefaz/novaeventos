@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'anymail',
     'eventos',
 ]
 
@@ -115,24 +114,13 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-# Correo — usa Resend en producción (Railway bloquea SMTP),
-# y SMTP Gmail en desarrollo local.
-RESEND_API_KEY = config('RESEND_API_KEY', default='')
-
-if RESEND_API_KEY:
-    # Producción: Resend vía API (funciona en Railway)
-    EMAIL_BACKEND = 'anymail.backends.resend.EmailBackend'
-    ANYMAIL = {
-        'RESEND_API_KEY': RESEND_API_KEY,
-    }
-    DEFAULT_FROM_EMAIL = 'NovaEventos <onboarding@resend.dev>'
-else:
-    # Desarrollo local: SMTP Gmail
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_USE_SSL = False
-    EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='jennifer.defaz3511@utc.edu.ec')
-    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='dwogdivylzffohjw')
-    DEFAULT_FROM_EMAIL = f'NovaEventos <{config("EMAIL_HOST_USER", default="jennifer.defaz3511@utc.edu.ec")}>'
+# Correo — Brevo (ex Sendinblue) SMTP
+# Funciona en Railway sin restricciones de destinatarios, 300 correos/día gratis.
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp-relay.brevo.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = config('BREVO_SMTP_USER', default='jennifer.defaz3511@utc.edu.ec')
+EMAIL_HOST_PASSWORD = config('BREVO_SMTP_KEY', default='')
+DEFAULT_FROM_EMAIL = 'NovaEventos <jennifer.defaz3511@utc.edu.ec>'

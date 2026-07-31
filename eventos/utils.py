@@ -288,17 +288,15 @@ def _enviar_correo_aprobada(evento):
         )
 
         correo = EmailMessage(asunto, cuerpo, to=[email_destino])
-
-        # Adjuntar el PDF
         pdf_buffer = generar_pdf_factura(evento)
         correo.attach(
             filename=f'Factura_NovaEventos_EVT-{evento.id:05d}.pdf',
             content=pdf_buffer.read(),
             mimetype='application/pdf'
         )
-
         correo.send(fail_silently=False)
         print(f'✅ Correo de aprobación enviado a {email_destino}')
+
     except Exception as e:
         print(f'❌ Error enviando correo de aprobación: {e}')
 
