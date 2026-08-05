@@ -1058,25 +1058,25 @@ def eventos_calendario_json(request):
         cliente_nombre = ev.cotizacion_origen.cliente.user.get_full_name()
 
         bloques.append({
-            'title': f'🔧 Montaje — {ev.salon.nombre}',
+            'title': f'🕐 Preparación — {ev.salon.nombre}',
             'start': ev.fecha_montaje_inicio.isoformat(),
             'end': ev.fecha_evento_inicio.isoformat(),
             'color': '#FFC107',
-            'extendedProps': {'tipo': 'Montaje', 'cliente': cliente_nombre, 'evento_id': ev.id}
+            'extendedProps': {'tipo': 'Preparación del salón', 'cliente': cliente_nombre, 'evento_id': ev.id}
         })
         bloques.append({
-            'title': f'🎉 {cliente_nombre} — {ev.salon.nombre}',
+            'title': f'🎊 {cliente_nombre} — {ev.salon.nombre}',
             'start': ev.fecha_evento_inicio.isoformat(),
             'end': ev.fecha_evento_fin.isoformat(),
             'color': '#0B3C5D',
             'extendedProps': {'tipo': 'Evento', 'cliente': cliente_nombre, 'evento_id': ev.id}
         })
         bloques.append({
-            'title': f'🏗️ Desmontaje — {ev.salon.nombre}',
+            'title': f'🧹 Cierre — {ev.salon.nombre}',
             'start': ev.fecha_evento_fin.isoformat(),
             'end': ev.fecha_desmontaje_fin.isoformat(),
             'color': '#FD7E14',
-            'extendedProps': {'tipo': 'Desmontaje', 'cliente': cliente_nombre, 'evento_id': ev.id}
+            'extendedProps': {'tipo': 'Cierre del salón', 'cliente': cliente_nombre, 'evento_id': ev.id}
         })
 
     return JsonResponse(bloques, safe=False)
