@@ -58,7 +58,13 @@
 
         <div class="auth-field">
             <label>Contraseña</label>
-            <input class="auth-input" type="password" name="password" placeholder="Mínimo 6 caracteres">
+            <div style="position:relative;">
+                <input class="auth-input" type="password" name="password" id="password" placeholder="Mínimo 6 caracteres" style="padding-right:44px;">
+                <button type="button" id="toggle_password" tabindex="-1"
+                    style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#888; padding:0;">
+                    <i class="fa fa-eye" id="icono_password" style="font-size:16px;"></i>
+                </button>
+            </div>
         </div>
 
         <button class="auth-button" type="submit">Registrarme</button>
@@ -115,6 +121,19 @@ label.error{
 {% block scripts %}
 <script>
 $(document).ready(function() {
+
+    // Ojito para mostrar/ocultar contraseña
+    $('#toggle_password').on('click', function() {
+        const input = $('#password');
+        const icono = $('#icono_password');
+        if (input.attr('type') === 'password') {
+            input.attr('type', 'text');
+            icono.removeClass('fa-eye').addClass('fa-eye-slash');
+        } else {
+            input.attr('type', 'password');
+            icono.removeClass('fa-eye-slash').addClass('fa-eye');
+        }
+    });
 
     $.validator.addMethod("soloLetras", function(value, element) {
         return this.optional(element) || /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(value);

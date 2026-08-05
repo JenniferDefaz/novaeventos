@@ -17,7 +17,14 @@
     <input class="form-control" type="text" name="usuario">
     <br>
     <b>Contraseña:</b>
-    <input class="form-control" type="password" name="clave">
+    <div class="input-group">
+        <input class="form-control" type="password" name="clave" id="clave">
+        <div class="input-group-append">
+            <button class="btn btn-outline-secondary" type="button" id="toggle_clave" tabindex="-1">
+                <i class="fa fa-eye" id="icono_clave"></i>
+            </button>
+        </div>
+    </div>
     <br><br>
     <button class="btn btn-success form-control" type="submit">Ingresar</button>
 </form>
@@ -36,6 +43,19 @@
 $(document).ready(function() {
     $("#form_login").validate({
         rules: { usuario: { required: true }, clave: { required: true } }
+    });
+
+    // Ojito para mostrar/ocultar contraseña
+    $('#toggle_clave').on('click', function() {
+        const input = $('#clave');
+        const icono = $('#icono_clave');
+        if (input.attr('type') === 'password') {
+            input.attr('type', 'text');
+            icono.removeClass('fa-eye').addClass('fa-eye-slash');
+        } else {
+            input.attr('type', 'password');
+            icono.removeClass('fa-eye-slash').addClass('fa-eye');
+        }
     });
 });
 </script>
