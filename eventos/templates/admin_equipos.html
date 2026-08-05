@@ -49,12 +49,17 @@
 $(document).ready(function() {
 {% if equipos %}
 $('#tabla_equipos').DataTable({
-language: {
-url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-        },
-order: [[1, 'asc'], [0, 'asc']],
-columnDefs: [{ orderable: false, targets: [5] }]
-    });
+    dom: 'Bfrtip',
+    buttons: [
+        { extend: 'excelHtml5', text: '<i class="fa fa-file-excel-o"></i> Excel', className: 'btn btn-success btn-sm', title: 'Equipos - NovaEventos', exportOptions: { columns: [0,1,2,3,4] } },
+        { extend: 'csvHtml5',   text: '<i class="fa fa-file-text-o"></i> CSV',   className: 'btn btn-secondary btn-sm', title: 'Equipos - NovaEventos', exportOptions: { columns: [0,1,2,3,4] } },
+        { extend: 'pdfHtml5',   text: '<i class="fa fa-file-pdf-o"></i> PDF',    className: 'btn btn-danger btn-sm',    title: 'Equipos - NovaEventos', exportOptions: { columns: [0,1,2,3,4] } },
+        { extend: 'print',      text: '<i class="fa fa-print"></i> Imprimir',    className: 'btn btn-dark btn-sm',      title: 'Equipos - NovaEventos', exportOptions: { columns: [0,1,2,3,4] } },
+    ],
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+    order: [[1, 'asc'], [0, 'asc']],
+    columnDefs: [{ orderable: false, targets: [5] }]
+});
 {% endif %}
 
 $(document).on('click', '.btn-eliminar', function(e) {
