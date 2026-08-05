@@ -106,6 +106,7 @@ def inicio(request):
 
 def enviar_correo_bienvenida(nombre, email):
     try:
+        from eventos.utils import _enviar_via_brevo
         asunto = '¡Bienvenido a NovaEventos!'
         cuerpo = (
             f'Hola {nombre},\n\n'
@@ -115,9 +116,12 @@ def enviar_correo_bienvenida(nombre, email):
             f'Gracias por confiar en nosotros.\n\n'
             f'— El equipo de NovaEventos'
         )
-        correo = EmailMessage(asunto, cuerpo, to=[email])
-        correo.send(fail_silently=False)
-        print(f'✅ Correo de bienvenida enviado a {email}')
+        _enviar_via_brevo(
+            destinatario_email=email,
+            destinatario_nombre=nombre,
+            asunto=asunto,
+            cuerpo_texto=cuerpo,
+        )
     except Exception as e:
         print(f'❌ Error enviando correo de bienvenida a {email}: {e}')
 
