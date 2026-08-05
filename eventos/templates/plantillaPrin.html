@@ -141,6 +141,17 @@
 
 						<div class="reservations_phone ml-auto">
 							{% if user.is_authenticated %}
+								<span style="color:#c9a898; font-size:0.85rem; margin-right:12px;">
+									<i class="fa fa-user-circle"></i>
+									<b>{{ user.get_full_name|default:user.username }}</b>
+									{% if user.usuario.es_administrador %}
+										<span style="background:#D4AF37; color:#2a2929; border-radius:10px; padding:2px 8px; font-size:0.75rem; margin-left:4px;">Admin</span>
+									{% elif user.usuario.es_coordinador %}
+										<span style="background:#17a2b8; color:#fff; border-radius:10px; padding:2px 8px; font-size:0.75rem; margin-left:4px;">Coordinador</span>
+									{% else %}
+										<span style="background:#28a745; color:#fff; border-radius:10px; padding:2px 8px; font-size:0.75rem; margin-left:4px;">Cliente</span>
+									{% endif %}
+								</span>
 								<a href="{% url 'cerrar_sesion' %}" style="color:inherit;">Cerrar sesión</a>
 							{% else %}
 								<a href="{% url 'iniciar_sesion' %}" style="color:inherit;">Iniciar sesión</a>

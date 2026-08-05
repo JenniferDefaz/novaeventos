@@ -183,6 +183,12 @@ def iniciar_sesion(request):
 
         if user is not None:
             login(request, user)
+            nombre = user.get_full_name() or user.username
+            try:
+                rol = user.usuario.get_rol_display()
+            except Exception:
+                rol = 'Usuario'
+            messages.success(request, f'¡Bienvenido, {nombre}! Has iniciado sesión como {rol}.')
             return _redirigir_segun_rol(user)
         else:
             return render(request, 'login.html', {'error': 'Usuario o contraseña incorrectos.'})
