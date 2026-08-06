@@ -495,6 +495,32 @@ $(document).ready(function() {
     e.preventDefault();
     deferredPrompt = e;
     console.log('[PWA] beforeinstallprompt capturado');
+
+    // En móvil mostrar SweetAlert proactivo después de 3 segundos
+    var esMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    var yaVioPrompt = sessionStorage.getItem('pwa_prompt_mostrado');
+    if (esMobile && !yaVioPrompt) {
+      sessionStorage.setItem('pwa_prompt_mostrado', '1');
+      setTimeout(function() {
+        Swal.fire({
+          title: '📱 Instalar NovaEventos',
+          text: '¡Agrega la app a tu pantalla de inicio para acceder más rápido!',
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: '✓ Instalar ahora',
+          cancelButtonText: 'Ahora no',
+          confirmButtonColor: '#D4AF37',
+          cancelButtonColor: '#6c757d',
+        }).then(function(result) {
+          if (result.isConfirmed && deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function(choice) {
+              deferredPrompt = null;
+            });
+          }
+        });
+      }, 3000);
+    }
   });
 
   window.addEventListener('appinstalled', function() {
@@ -503,6 +529,18 @@ $(document).ready(function() {
     });
     deferredPrompt = null;
     console.log('[PWA] App instalada');
+    // Mensaje de confirmacion
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        title: '¡App instalada!',
+        text: 'NovaEventos se instaló correctamente. Búscala en tu pantalla de inicio.',
+        icon: 'success',
+        confirmButtonText: 'Genial',
+        confirmButtonColor: '#D4AF37',
+        timer: 4000,
+        timerProgressBar: true,
+      });
+    }
   });
 
   window.instalarPWA = function() {
