@@ -452,31 +452,34 @@ $(document).ready(function() {
         .then(reg => {
           console.log('[PWA] SW registrado. Scope:', reg.scope);
 
-          // ---- 2. Notificación de bienvenida al iniciar sesión ----
+          // ---- 2. Notificacion de bienvenida al iniciar sesion ----
           {% if user.is_authenticated %}
-          const yaNotificado = sessionStorage.getItem('pwa_bienvenida_{{ user.id }}');
+          var yaNotificado = sessionStorage.getItem('pwa_bienvenida_{{ user.id }}');
           if (!yaNotificado && 'Notification' in window) {
-            Notification.requestPermission().then(permission => {
+            Notification.requestPermission().then(function(permission) {
               if (permission === 'granted') {
-                const nombre = '{{ user.get_full_name|default:user.username|escapejs }}';
+                var nombre = '{{ user.get_full_name|default:user.username|escapejs }}';
                 {% if user.usuario.es_administrador %}
-                  const rol = 'Administrador';
-                  const destino = '/panelCotizaciones/';
+                  var rol = 'Administrador';
+                  var destino = '/panelCotizaciones/';
                 {% elif user.usuario.es_coordinador %}
-                  const rol = 'Coordinador';
-                  const destino = '/misEventos/';
+                  var rol = 'Coordinador';
+                  var destino = '/misEventos/';
                 {% else %}
-                  const rol = 'Cliente';
-                  const destino = '/misCotizaciones/';
+                  var rol = 'Cliente';
+                  var destino = '/misCotizaciones/';
                 {% endif %}
-                reg.showNotification('👋 ¡Bienvenido a NovaEventos!', {
-                  body: `Hola ${nombre} — has iniciado sesión como ${rol}.`,
+                reg.showNotification('NovaEventos — Sesion iniciada', {
+                  body: 'Bienvenido ' + nombre + '. Has iniciado sesion como ' + rol + '.',
                   icon: '/static/images/icon-192x192.png',
                   badge: '/static/images/icon-96x96.png',
+                  image: '/static/images/icon-512x512.png',
                   vibrate: [100, 50, 100],
                   data: { url: destino },
                   tag: 'bienvenida',
-                  renotify: false,
+                  renotify: true,
+                  requireInteraction: false,
+                  silent: false,
                 });
                 sessionStorage.setItem('pwa_bienvenida_{{ user.id }}', '1');
               }
@@ -495,32 +498,6 @@ $(document).ready(function() {
     e.preventDefault();
     deferredPrompt = e;
     console.log('[PWA] beforeinstallprompt capturado');
-
-    // En móvil mostrar SweetAlert proactivo después de 3 segundos
-    var esMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    var yaVioPrompt = sessionStorage.getItem('pwa_prompt_mostrado');
-    if (esMobile && !yaVioPrompt) {
-      sessionStorage.setItem('pwa_prompt_mostrado', '1');
-      setTimeout(function() {
-        Swal.fire({
-          title: '📱 Instalar NovaEventos',
-          text: '¡Agrega la app a tu pantalla de inicio para acceder más rápido!',
-          icon: 'info',
-          showCancelButton: true,
-          confirmButtonText: '✓ Instalar ahora',
-          cancelButtonText: 'Ahora no',
-          confirmButtonColor: '#D4AF37',
-          cancelButtonColor: '#6c757d',
-        }).then(function(result) {
-          if (result.isConfirmed && deferredPrompt) {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(function(choice) {
-              deferredPrompt = null;
-            });
-          }
-        });
-      }, 3000);
-    }
   });
 
   window.addEventListener('appinstalled', function() {
