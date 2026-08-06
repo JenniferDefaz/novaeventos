@@ -170,28 +170,27 @@
 											<span style="background:#28a745; color:#fff; border-radius:8px; padding:1px 7px; font-size:0.7rem; font-weight:700; letter-spacing:0.3px;">CLIENTE</span>
 										{% endif %}
 									</div>
-								<!-- Botón instalar PWA (oculto hasta que el navegador lo soporte) -->
-									<button class="btn-pwa-instalar"
-										onclick="instalarPWA()"
-										style="display:none; align-items:center; gap:5px; background:#D4AF37; color:#2a2929; border:none; border-radius:8px; padding:4px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap;">
-										<i class="fa fa-download"></i> Instalar
-									</button>
 									<a href="{% url 'cerrar_sesion' %}" style="color:#c9a898; font-size:0.85rem; white-space:nowrap;">
 										<i class="fa fa-sign-out"></i> Salir
 									</a>
 								</div>
 							{% else %}
-								<!-- Botón instalar PWA también para usuarios no autenticados -->
-								<button class="btn-pwa-instalar"
-									onclick="instalarPWA()"
-									style="display:none; align-items:center; gap:5px; background:#D4AF37; color:#2a2929; border:none; border-radius:8px; padding:4px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap; margin-right:10px;">
-									<i class="fa fa-download"></i> Instalar
-								</button>
 								<a href="{% url 'iniciar_sesion' %}" style="color:inherit;">Iniciar sesión</a>
 								&nbsp;|&nbsp;
 								<a href="{% url 'registro_cliente' %}" style="color:inherit;">Registrarme</a>
 							{% endif %}
 						</div>
+
+						<!-- Botón instalar PWA: solo visible cuando NO hay sesión iniciada -->
+						{% if not user.is_authenticated %}
+						<div style="margin-left:16px;">
+							<button class="btn-pwa-instalar"
+								onclick="instalarPWA()"
+								style="display:inline-flex; align-items:center; gap:5px; background:#D4AF37; color:#2a2929; border:none; border-radius:8px; padding:5px 12px; font-size:0.78rem; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 2px 8px rgba(212,175,55,0.4);">
+								<i class="fa fa-download"></i> Instalar app
+							</button>
+						</div>
+						{% endif %}
 					</div>
 				</div>
 			</div>
@@ -491,21 +490,10 @@ $(document).ready(function() {
 
   // ---- 3. Botón de instalación ----
   var deferredPrompt = null;
-  var esFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-
-  // Firefox: mostrar botón siempre con instrucciones manuales
-  if (esFirefox) {
-    document.querySelectorAll('.btn-pwa-instalar').forEach(function(btn) {
-      btn.style.display = 'inline-flex';
-    });
-  }
 
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
-    document.querySelectorAll('.btn-pwa-instalar').forEach(function(btn) {
-      btn.style.display = 'inline-flex';
-    });
     console.log('[PWA] beforeinstallprompt capturado');
   });
 
@@ -522,20 +510,22 @@ $(document).ready(function() {
       // Chrome / Edge / Android Chrome — prompt nativo
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then(function(choice) {
-        if (choice.outcome === 'accepted') console.log('[PWA] Instalada');
+        if (choice.outcome === 'accepted') {
+          console.log('[PWA] Instalada');
+          document.querySelectorAll('.btn-pwa-instalar').forEach(function(btn) {
+            btn.style.display = 'none';
+          });
+        }
         deferredPrompt = null;
-        document.querySelectorAll('.btn-pwa-instalar').forEach(function(btn) {
-          btn.style.display = 'none';
-        });
       });
     } else {
-      // Firefox, Safari, o ya instalada — instrucciones manuales
+      // Firefox, Safari, Edge sin prompt — instrucciones manuales con SweetAlert
       Swal.fire({
         title: 'Instalar NovaEventos',
         html:
           '<div style="text-align:left;line-height:2;">' +
           '<p><b>🦊 Firefox (escritorio):</b></p>' +
-          '<p>Busca el icono <b>🏠</b> en la barra de direcciones y haz clic en él.</p>' +
+          '<p>Busca el icono <b>🏠</b> en la barra de direcciones y haz clic.</p>' +
           '<hr>' +
           '<p><b>🤖 Android (Chrome/Firefox):</b></p>' +
           '<p>Toca el menú <b>⋮</b> → <b>"Agregar a pantalla de inicio"</b></p>' +
@@ -553,4 +543,4 @@ $(document).ready(function() {
 })();
 </script>
 </body>
-</html>
+</html>cd /home/jenniferdefaz/django/NovaEventos
