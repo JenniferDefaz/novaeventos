@@ -439,6 +439,49 @@ $(document).ready(function() {
 {% block scripts %}{% endblock %}
 
 <!-- ============================================================
+     BANNER PWA PERSONALIZADO (igual al banner nativo de Chrome)
+     Aparece automaticamente en movil al entrar al sitio
+     ============================================================ -->
+<div id="pwa-banner" style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 99999;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    padding: 10px 16px;
+    align-items: center;
+    gap: 12px;
+    font-family: Arial, sans-serif;
+    border-bottom: 1px solid #e0e0e0;
+">
+    <img src="/static/images/icon-72x72.png"
+         style="width:48px; height:48px; border-radius:10px; flex-shrink:0;"
+         alt="NovaEventos">
+    <div style="flex:1; min-width:0;">
+        <div style="font-size:14px; font-weight:700; color:#1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            Instalar NovaEventos
+        </div>
+        <div style="font-size:12px; color:#666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            web-production-5ca31.up.railway.app
+        </div>
+    </div>
+    <button onclick="instalarDesdeBanner()"
+        style="background:#1a73e8; color:#fff; border:none; border-radius:6px;
+               padding:8px 18px; font-size:14px; font-weight:600; cursor:pointer;
+               white-space:nowrap; flex-shrink:0;">
+        Instalar
+    </button>
+    <button onclick="cerrarBanner()"
+        style="background:none; border:none; font-size:20px; color:#666;
+               cursor:pointer; padding:4px 8px; flex-shrink:0; line-height:1;">
+        ✕
+    </button>
+</div>
+
+<!-- ============================================================
      PWA: Registro del Service Worker + Botón de instalación
      + Notificación de bienvenida al iniciar sesión
      ============================================================ -->
@@ -491,63 +534,75 @@ $(document).ready(function() {
     });
   }
 
-  // ---- 3. Botón de instalación ----
+  // ---- 3. Botón de instalación y banner personalizado ----
   var deferredPrompt = null;
+
+  // Mostrar banner personalizado (igual al de Chrome nativo)
+  function mostrarBannerPWA() {
+    var banner = document.getElementById('pwa-banner');
+    var yaCerrado = localStorage.getItem('pwa_banner_cerrado');
+    var yaInstalado = localStorage.getItem('pwa_instalado');
+    if (banner && !yaCerrado && !yaInstalado) {
+      banner.style.display = 'flex';
+      // Empujar el contenido hacia abajo para que no tape la navbar
+      document.body.style.paddingTop = (banner.offsetHeight + 'px');
+    }
+  }
+
+  window.cerrarBanner = function() {
+    var banner = document.getElementById('pwa-banner');
+    if (banner) banner.style.display = 'none';
+    document.body.style.paddingTop = '';
+    localStorage.setItem('pwa_banner_cerrado', '1');
+  };
+
+  window.instalarDesdeBanner = function() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(choice) {
+        if (choice.outcome === 'accepted') {
+          localStorage.setItem('pwa_instalado', '1');
+        }
+        deferredPrompt = null;
+        cerrarBanner();
+      });
+    } else {
+      // Sin prompt nativo (Firefox/Safari) — ocultar banner e ir al menú del navegador
+      cerrarBanner();
+      alert('Toca el menu del navegador (tres puntos) y selecciona "Agregar a pantalla de inicio".');
+    }
+  };
 
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
     console.log('[PWA] beforeinstallprompt capturado');
-
-    // En Android: disparar el prompt nativo inmediatamente al cargar
-    var esMobile = /Android/i.test(navigator.userAgent);
-    var yaInstalado = sessionStorage.getItem('pwa_instalado');
-    if (esMobile && !yaInstalado) {
-      // Pequeño delay para que cargue la página primero
-      setTimeout(function() {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          deferredPrompt.userChoice.then(function(choice) {
-            if (choice.outcome === 'accepted') {
-              sessionStorage.setItem('pwa_instalado', '1');
-              document.querySelectorAll('.btn-pwa-instalar').forEach(function(btn) {
-                btn.style.display = 'none';
-              });
-            }
-            deferredPrompt = null;
-          });
-        }
-      }, 2000);
-    }
+    mostrarBannerPWA();
   });
 
+  // En móviles sin beforeinstallprompt (algunos casos) mostrar banner igual
+  var esMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (esMobile) {
+    setTimeout(function() {
+      mostrarBannerPWA();
+    }, 1500);
+  }
+
   window.addEventListener('appinstalled', function() {
+    cerrarBanner();
+    localStorage.setItem('pwa_instalado', '1');
+    deferredPrompt = null;
     document.querySelectorAll('.btn-pwa-instalar').forEach(function(btn) {
       btn.style.display = 'none';
     });
-    deferredPrompt = null;
-    console.log('[PWA] App instalada');
-    // Mensaje de confirmacion
-    if (typeof Swal !== 'undefined') {
-      Swal.fire({
-        title: '¡App instalada!',
-        text: 'NovaEventos se instaló correctamente. Búscala en tu pantalla de inicio.',
-        icon: 'success',
-        confirmButtonText: 'Genial',
-        confirmButtonColor: '#D4AF37',
-        timer: 4000,
-        timerProgressBar: true,
-      });
-    }
   });
 
   window.instalarPWA = function() {
     if (deferredPrompt) {
-      // Chrome / Edge / Android Chrome — prompt nativo
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then(function(choice) {
         if (choice.outcome === 'accepted') {
-          console.log('[PWA] Instalada');
+          localStorage.setItem('pwa_instalado', '1');
           document.querySelectorAll('.btn-pwa-instalar').forEach(function(btn) {
             btn.style.display = 'none';
           });
@@ -555,28 +610,11 @@ $(document).ready(function() {
         deferredPrompt = null;
       });
     } else {
-      // Firefox, Safari, Edge sin prompt — instrucciones manuales con SweetAlert
-      Swal.fire({
-        title: 'Instalar NovaEventos',
-        html:
-          '<div style="text-align:left;line-height:2;">' +
-          '<p><b>🦊 Firefox (escritorio):</b></p>' +
-          '<p>Busca el icono <b>🏠</b> en la barra de direcciones y haz clic.</p>' +
-          '<hr>' +
-          '<p><b>🤖 Android (Chrome/Firefox):</b></p>' +
-          '<p>Toca el menú <b>⋮</b> → <b>"Agregar a pantalla de inicio"</b></p>' +
-          '<hr>' +
-          '<p><b>🍎 iPhone (Safari):</b></p>' +
-          '<p>Toca <b>Compartir ↗</b> → <b>"Agregar a inicio"</b></p>' +
-          '</div>',
-        icon: 'info',
-        confirmButtonText: 'Entendido',
-        confirmButtonColor: '#D4AF37',
-      });
+      mostrarBannerPWA();
     }
   };
 
 })();
 </script>
 </body>
-</html>cd /home/jenniferdefaz/django/NovaEventos
+</html>
