@@ -1,0 +1,87 @@
+{
+  "name": "NovaEventos — Gestión de Eventos",
+  "short_name": "NovaEventos",
+  "description": "Sistema de gestión de eventos, banquetes y centros de convenciones",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2a2929",
+  "theme_color": "#2a2929",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/static/images/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/images/screenshot1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Panel de cotizaciones"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Ver Salones",
+      "short_name": "Salones",
+      "description": "Explorar catálogo de salones",
+      "url": "/salones/",
+      "icons": [{ "src": "/static/images/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Mis Cotizaciones",
+      "short_name": "Cotizaciones",
+      "description": "Ver mis cotizaciones",
+      "url": "/misCotizaciones/",
+      "icons": [{ "src": "/static/images/icon-96x96.png", "sizes": "96x96" }]
+    }
+  ]
+}

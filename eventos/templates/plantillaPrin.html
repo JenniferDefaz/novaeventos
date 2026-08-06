@@ -36,6 +36,19 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
+	<!-- PWA: manifest e íconos -->
+	<link rel="manifest" href="/static/manifest.json">
+	<meta name="theme-color" content="#2a2929">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="apple-mobile-web-app-title" content="NovaEventos">
+	<link rel="apple-touch-icon" href="/static/images/icon-192x192.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="/static/images/icon-152x152.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="/static/images/icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="192x192" href="/static/images/icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="512x512" href="/static/images/icon-512x512.png">
+
 </head>
 <body>
 <div class="super_container">
@@ -157,11 +170,21 @@
 											<span style="background:#28a745; color:#fff; border-radius:8px; padding:1px 7px; font-size:0.7rem; font-weight:700; letter-spacing:0.3px;">CLIENTE</span>
 										{% endif %}
 									</div>
+									<!-- Botón instalar PWA (oculto hasta que el navegador lo soporte) -->
+									<button id="btn_instalar_pwa"
+										style="display:none; align-items:center; gap:5px; background:#D4AF37; color:#2a2929; border:none; border-radius:8px; padding:4px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap;">
+										<i class="fa fa-download"></i> Instalar app
+									</button>
 									<a href="{% url 'cerrar_sesion' %}" style="color:#c9a898; font-size:0.85rem; white-space:nowrap;">
 										<i class="fa fa-sign-out"></i> Salir
 									</a>
 								</div>
 							{% else %}
+								<!-- Botón instalar PWA también para usuarios no autenticados -->
+								<button id="btn_instalar_pwa"
+									style="display:none; align-items:center; gap:5px; background:#D4AF37; color:#2a2929; border:none; border-radius:8px; padding:4px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap; margin-right:10px;">
+									<i class="fa fa-download"></i> Instalar app
+								</button>
 								<a href="{% url 'iniciar_sesion' %}" style="color:inherit;">Iniciar sesión</a>
 								&nbsp;|&nbsp;
 								<a href="{% url 'registro_cliente' %}" style="color:inherit;">Registrarme</a>
@@ -413,5 +436,50 @@ $(document).ready(function() {
 </script>
 
 {% block scripts %}{% endblock %}
+
+<!-- PWA: registro del Service Worker y botón de instalación -->
+<script>
+// ---- Registro del Service Worker ----
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/static/sw.js', { scope: '/' })
+            .then(reg => console.log('[PWA] Service Worker registrado:', reg.scope))
+            .catch(err => console.warn('[PWA] Error al registrar SW:', err));
+    });
+}
+
+// ---- Botón de instalación ----
+let deferredPrompt = null;
+const btnInstalar = document.getElementById('btn_instalar_pwa');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Mostrar el botón de instalación
+    if (btnInstalar) {
+        btnInstalar.style.display = 'inline-flex';
+    }
+});
+
+if (btnInstalar) {
+    btnInstalar.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            console.log('[PWA] App instalada');
+            btnInstalar.style.display = 'none';
+        }
+        deferredPrompt = null;
+    });
+}
+
+// Ocultar botón si ya está instalada
+window.addEventListener('appinstalled', () => {
+    if (btnInstalar) btnInstalar.style.display = 'none';
+    deferredPrompt = null;
+    console.log('[PWA] App instalada exitosamente');
+});
+</script>
 </body>
 </html>
