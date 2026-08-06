@@ -490,43 +490,64 @@ $(document).ready(function() {
   }
 
   // ---- 3. Botón de instalación ----
-  let deferredPrompt = null;
+  var deferredPrompt = null;
+  var esFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
+  // Firefox: mostrar botón siempre con instrucciones manuales
+  if (esFirefox) {
+    document.querySelectorAll('.btn-pwa-instalar').forEach(function(btn) {
+      btn.style.display = 'inline-flex';
+    });
+  }
 
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
-    // Mostrar todos los botones de instalación de la página
-    document.querySelectorAll('.btn-pwa-instalar').forEach(btn => {
+    document.querySelectorAll('.btn-pwa-instalar').forEach(function(btn) {
       btn.style.display = 'inline-flex';
     });
     console.log('[PWA] beforeinstallprompt capturado');
   });
 
   window.addEventListener('appinstalled', function() {
-    document.querySelectorAll('.btn-pwa-instalar').forEach(btn => {
+    document.querySelectorAll('.btn-pwa-instalar').forEach(function(btn) {
       btn.style.display = 'none';
     });
     deferredPrompt = null;
     console.log('[PWA] App instalada');
   });
 
-  // Exponer función global para los botones
   window.instalarPWA = function() {
-    if (!deferredPrompt) {
-      // Si no hay prompt (iOS o ya instalada), mostrar instrucciones
-      alert('Para instalar en iPhone: toca el botón Compartir ↗ y luego "Agregar a inicio".\n\nEn Android: toca el menú ⋮ del navegador y selecciona "Agregar a pantalla de inicio".');
-      return;
-    }
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(function(choice) {
-      if (choice.outcome === 'accepted') {
-        console.log('[PWA] Usuario aceptó instalar');
-      }
-      deferredPrompt = null;
-      document.querySelectorAll('.btn-pwa-instalar').forEach(btn => {
-        btn.style.display = 'none';
+    if (deferredPrompt) {
+      // Chrome / Edge / Android Chrome — prompt nativo
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(choice) {
+        if (choice.outcome === 'accepted') console.log('[PWA] Instalada');
+        deferredPrompt = null;
+        document.querySelectorAll('.btn-pwa-instalar').forEach(function(btn) {
+          btn.style.display = 'none';
+        });
       });
-    });
+    } else {
+      // Firefox, Safari, o ya instalada — instrucciones manuales
+      Swal.fire({
+        title: 'Instalar NovaEventos',
+        html:
+          '<div style="text-align:left;line-height:2;">' +
+          '<p><b>🦊 Firefox (escritorio):</b></p>' +
+          '<p>Busca el icono <b>🏠</b> en la barra de direcciones y haz clic en él.</p>' +
+          '<hr>' +
+          '<p><b>🤖 Android (Chrome/Firefox):</b></p>' +
+          '<p>Toca el menú <b>⋮</b> → <b>"Agregar a pantalla de inicio"</b></p>' +
+          '<hr>' +
+          '<p><b>🍎 iPhone (Safari):</b></p>' +
+          '<p>Toca <b>Compartir ↗</b> → <b>"Agregar a inicio"</b></p>' +
+          '</div>',
+        icon: 'info',
+        confirmButtonText: 'Entendido',
+        confirmButtonColor: '#D4AF37',
+      });
+    }
   };
 
 })();
