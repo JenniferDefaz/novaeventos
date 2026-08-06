@@ -170,10 +170,11 @@
 											<span style="background:#28a745; color:#fff; border-radius:8px; padding:1px 7px; font-size:0.7rem; font-weight:700; letter-spacing:0.3px;">CLIENTE</span>
 										{% endif %}
 									</div>
-									<!-- Botón instalar PWA (oculto hasta que el navegador lo soporte) -->
-									<button id="btn_instalar_pwa"
+								<!-- Botón instalar PWA (oculto hasta que el navegador lo soporte) -->
+									<button class="btn-pwa-instalar"
+										onclick="instalarPWA()"
 										style="display:none; align-items:center; gap:5px; background:#D4AF37; color:#2a2929; border:none; border-radius:8px; padding:4px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap;">
-										<i class="fa fa-download"></i> Instalar app
+										<i class="fa fa-download"></i> Instalar
 									</button>
 									<a href="{% url 'cerrar_sesion' %}" style="color:#c9a898; font-size:0.85rem; white-space:nowrap;">
 										<i class="fa fa-sign-out"></i> Salir
@@ -181,9 +182,10 @@
 								</div>
 							{% else %}
 								<!-- Botón instalar PWA también para usuarios no autenticados -->
-								<button id="btn_instalar_pwa"
+								<button class="btn-pwa-instalar"
+									onclick="instalarPWA()"
 									style="display:none; align-items:center; gap:5px; background:#D4AF37; color:#2a2929; border:none; border-radius:8px; padding:4px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap; margin-right:10px;">
-									<i class="fa fa-download"></i> Instalar app
+									<i class="fa fa-download"></i> Instalar
 								</button>
 								<a href="{% url 'iniciar_sesion' %}" style="color:inherit;">Iniciar sesión</a>
 								&nbsp;|&nbsp;
@@ -437,49 +439,97 @@ $(document).ready(function() {
 
 {% block scripts %}{% endblock %}
 
-<!-- PWA: registro del Service Worker y botón de instalación -->
+<!-- ============================================================
+     PWA: Registro del Service Worker + Botón de instalación
+     + Notificación de bienvenida al iniciar sesión
+     ============================================================ -->
 <script>
-// ---- Registro del Service Worker ----
-if ('serviceWorker' in navigator) {
+(function() {
+
+  // ---- 1. Registro del Service Worker ----
+  if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/static/sw.js', { scope: '/' })
-            .then(reg => console.log('[PWA] Service Worker registrado:', reg.scope))
-            .catch(err => console.warn('[PWA] Error al registrar SW:', err));
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(reg => {
+          console.log('[PWA] SW registrado. Scope:', reg.scope);
+
+          // ---- 2. Notificación de bienvenida al iniciar sesión ----
+          {% if user.is_authenticated %}
+          const yaNotificado = sessionStorage.getItem('pwa_bienvenida_{{ user.id }}');
+          if (!yaNotificado && 'Notification' in window) {
+            Notification.requestPermission().then(permission => {
+              if (permission === 'granted') {
+                const nombre = '{{ user.get_full_name|default:user.username|escapejs }}';
+                {% if user.usuario.es_administrador %}
+                  const rol = 'Administrador';
+                  const destino = '/panelCotizaciones/';
+                {% elif user.usuario.es_coordinador %}
+                  const rol = 'Coordinador';
+                  const destino = '/misEventos/';
+                {% else %}
+                  const rol = 'Cliente';
+                  const destino = '/misCotizaciones/';
+                {% endif %}
+                reg.showNotification('👋 ¡Bienvenido a NovaEventos!', {
+                  body: `Hola ${nombre} — has iniciado sesión como ${rol}.`,
+                  icon: '/static/images/icon-192x192.png',
+                  badge: '/static/images/icon-96x96.png',
+                  vibrate: [100, 50, 100],
+                  data: { url: destino },
+                  tag: 'bienvenida',
+                  renotify: false,
+                });
+                sessionStorage.setItem('pwa_bienvenida_{{ user.id }}', '1');
+              }
+            });
+          }
+          {% endif %}
+        })
+        .catch(err => console.warn('[PWA] Error al registrar SW:', err));
     });
-}
+  }
 
-// ---- Botón de instalación ----
-let deferredPrompt = null;
-const btnInstalar = document.getElementById('btn_instalar_pwa');
+  // ---- 3. Botón de instalación ----
+  let deferredPrompt = null;
 
-window.addEventListener('beforeinstallprompt', (e) => {
+  window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
-    // Mostrar el botón de instalación
-    if (btnInstalar) {
-        btnInstalar.style.display = 'inline-flex';
-    }
-});
-
-if (btnInstalar) {
-    btnInstalar.addEventListener('click', async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            console.log('[PWA] App instalada');
-            btnInstalar.style.display = 'none';
-        }
-        deferredPrompt = null;
+    // Mostrar todos los botones de instalación de la página
+    document.querySelectorAll('.btn-pwa-instalar').forEach(btn => {
+      btn.style.display = 'inline-flex';
     });
-}
+    console.log('[PWA] beforeinstallprompt capturado');
+  });
 
-// Ocultar botón si ya está instalada
-window.addEventListener('appinstalled', () => {
-    if (btnInstalar) btnInstalar.style.display = 'none';
+  window.addEventListener('appinstalled', function() {
+    document.querySelectorAll('.btn-pwa-instalar').forEach(btn => {
+      btn.style.display = 'none';
+    });
     deferredPrompt = null;
-    console.log('[PWA] App instalada exitosamente');
-});
+    console.log('[PWA] App instalada');
+  });
+
+  // Exponer función global para los botones
+  window.instalarPWA = function() {
+    if (!deferredPrompt) {
+      // Si no hay prompt (iOS o ya instalada), mostrar instrucciones
+      alert('Para instalar en iPhone: toca el botón Compartir ↗ y luego "Agregar a inicio".\n\nEn Android: toca el menú ⋮ del navegador y selecciona "Agregar a pantalla de inicio".');
+      return;
+    }
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(choice) {
+      if (choice.outcome === 'accepted') {
+        console.log('[PWA] Usuario aceptó instalar');
+      }
+      deferredPrompt = null;
+      document.querySelectorAll('.btn-pwa-instalar').forEach(btn => {
+        btn.style.display = 'none';
+      });
+    });
+  };
+
+})();
 </script>
 </body>
 </html>
