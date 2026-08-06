@@ -498,6 +498,27 @@ $(document).ready(function() {
     e.preventDefault();
     deferredPrompt = e;
     console.log('[PWA] beforeinstallprompt capturado');
+
+    // En Android: disparar el prompt nativo inmediatamente al cargar
+    var esMobile = /Android/i.test(navigator.userAgent);
+    var yaInstalado = sessionStorage.getItem('pwa_instalado');
+    if (esMobile && !yaInstalado) {
+      // Pequeño delay para que cargue la página primero
+      setTimeout(function() {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then(function(choice) {
+            if (choice.outcome === 'accepted') {
+              sessionStorage.setItem('pwa_instalado', '1');
+              document.querySelectorAll('.btn-pwa-instalar').forEach(function(btn) {
+                btn.style.display = 'none';
+              });
+            }
+            deferredPrompt = null;
+          });
+        }
+      }, 2000);
+    }
   });
 
   window.addEventListener('appinstalled', function() {
